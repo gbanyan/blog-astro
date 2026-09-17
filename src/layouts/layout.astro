@@ -67,7 +67,13 @@ const organizationSchema = {
   ].filter(Boolean),
 };
 
-const robotsContent = head.robots
+// Root layout (source `app/[locale]/layout.tsx`) always emits robots with the
+// Google directives plus creator/RSS tags; a page-level `head.robots` fully
+// replaces them (Next.js merge semantics — the deployed 404 emits only
+// `noindex, follow` with no googlebot meta).
+const rssUrl = absoluteUrl(localizedPath('/feed.xml', locale));
+const ROOT_GOOGLEBOT = 'index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1';
+const pageRobotsContent = head.robots
   ? [head.robots.index ? 'index' : 'noindex', head.robots.follow ? 'follow' : 'nofollow'].join(', ')
   : null;
 
@@ -94,13 +100,22 @@ const accentCss = `:root {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{head.title}</title>
     {head.description && <meta name="description" content={head.description} />}
+    <meta name="creator" content={siteConfig.author} />
     <link rel="canonical" href={head.canonical} />
     {
       head.alternates.map(({ locale: altLocale, href }) => (
         <link rel="alternate" hreflang={altLocale} href={href} />
       ))
     }
-    {robotsContent && <meta name="robots" content={robotsContent} />}
+    <link rel="alternate" type="application/rss+xml" href={rssUrl} />
+    {pageRobotsContent ? (
+      <meta name="robots" content={pageRobotsContent} />
+    ) : (
+      <>
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content={ROOT_GOOGLEBOT} />
+      </>
+    )}
 
     {head.openGraph.title && <meta property="og:title" content={head.openGraph.title} />}
     {head.openGraph.description && <meta property="og:description" content={head.openGraph.description} />}
@@ -109,6 +124,7 @@ const accentCss = `:root {
     <meta property="og:locale" content={head.openGraph.locale} />
     {ogImage && <meta property="og:image" content={ogImage.url} />}
     {ogImage?.alt && <meta property="og:image:alt" content={ogImage.alt} />}
+    <meta property="og:type" content="website" />
 
     <meta name="twitter:card" content={head.twitter.card} />
     {head.twitter.title && <meta name="twitter:title" content={head.twitter.title} />}

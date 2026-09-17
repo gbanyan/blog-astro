@@ -90,16 +90,16 @@ const navItems: NavLinkItem[] = [
 ];
 ---
 
-<header className="relative z-40 bg-white/80 backdrop-blur transition-colors duration-200 ease-snappy dark:bg-gray-950/80">
-  <div className="container mx-auto flex items-center justify-between px-4 py-3 text-slate-900 dark:text-slate-100">
+<header class="relative z-40 bg-white/80 backdrop-blur transition-colors duration-200 ease-snappy dark:bg-gray-950/80">
+  <div class="container mx-auto flex items-center justify-between px-4 py-3 text-slate-900 dark:text-slate-100">
     <a
       href={localizedPath('/', locale)}
-      className="motion-link group relative type-title whitespace-nowrap text-slate-900 hover:text-accent focus-visible:outline-none focus-visible:text-accent dark:text-slate-100 dark:hover:text-accent"
+      class="motion-link group relative type-title whitespace-nowrap text-slate-900 hover:text-accent focus-visible:outline-none focus-visible:text-accent dark:text-slate-100 dark:hover:text-accent"
     >
-      <span className="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-accent transition-all duration-180 ease-snappy group-hover:w-full" aria-hidden="true" />
+      <span class="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-accent transition-all duration-180 ease-snappy group-hover:w-full" aria-hidden="true" />
       {dictionary.brand.title}
     </a>
-    <div className="flex items-center gap-3">
+    <div class="flex items-center gap-3">
       <NavMenu
         client:load
         items={navItems}

@@ -27,13 +27,13 @@ const items = [
 ].filter(Boolean) as { key: string; href: string; label: string; icon: any }[];
 ---
 
-<footer className="py-4 text-center text-sm text-gray-500 dark:text-slate-400">
+<footer class="py-4 text-center text-sm text-gray-500 dark:text-slate-400">
   <div>
     © {currentYear} {siteConfig.author}
   </div>
   {
     items.length > 0 && (
-      <div className="mt-2 flex justify-center gap-4 text-base">
+      <div class="mt-2 flex justify-center gap-4 text-base">
         {items.map((item) => (
           <a
             key={item.key}
@@ -41,7 +41,7 @@ const items = [
             target="_blank"
             rel="noopener noreferrer"
             aria-label={item.label}
-            className="text-slate-500 hover:text-accent dark:text-slate-400 dark:hover:text-accent"
+            class="text-slate-500 hover:text-accent dark:text-slate-400 dark:hover:text-accent"
           >
             <item.icon className="h-4 w-4" />
           </a>
