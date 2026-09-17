@@ -1,0 +1,19 @@
+---
+/**
+ * Static equivalent of the `SectionDivider` island for markup that cannot
+ * cross an island boundary: the animated gradient bar plus a
+ * `scroll-reveal` wrapper observed by the page-level `ScrollReveal` island.
+ * The bar's entrance animation is driven by the same `is-visible` class
+ * (see `.section-divider` rules in globals.css), matching the source's
+ * observer-on-wrapper behavior.
+ */
+const { className = '' } = Astro.props;
+---
+<div class:list={['section-divider space-y-4', className]}>
+  <span
+    class="scroll-divider-bar block h-[2px] w-full origin-left rounded-full bg-gradient-to-r from-slate-200 via-accent-soft to-slate-200 transition-transform duration-500 ease-snappy dark:from-slate-800 dark:to-slate-800"
+  />
+  <div class="scroll-reveal">
+    <slot />
+  </div>
+</div>

@@ -1,0 +1,91 @@
+---
+import { getPostsByLocale } from '@/lib/content';
+import { getTagSlug } from '@/lib/tags';
+import { getSidebarData } from '@/lib/sidebar-data';
+import { siteConfig } from '@/lib/config';
+import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import SidebarLayout from '@/components/sidebar-layout.astro';
+import SectionDividerStatic from '@/components/section-divider-static.astro';
+import { PostListWithControls } from '@/components/post-list-with-controls';
+import { ScrollReveal } from '@/components/scroll-reveal';
+
+interface Props {
+  locale: Locale;
+  /** URL tag slug (already `getTagSlug`-normalized by the wrapper). */
+  tagSlug: string;
+}
+
+const { locale, tagSlug } = Astro.props;
+const dictionary = getDictionary(locale);
+const { tags: sidebarTags, aboutUrl, avatarSrc } = getSidebarData(locale);
+
+const posts = getPostsByLocale(locale).filter(
+  (post) => post.tags && post.tags.some((t) => getTagSlug(t) === tagSlug)
+);
+
+const tagLabel =
+  posts[0]?.tags?.find((t) => getTagSlug(t) === tagSlug) ?? tagSlug;
+
+// CollectionPage schema (source: app/[locale]/tags/[tag]/page.tsx).
+const collectionPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `${dictionary.tags.title}: ${tagLabel}`,
+  description: `${dictionary.tags.title}: ${tagLabel}`,
+  url: absoluteUrl(localizedPath(`/tags/${tagSlug}`, locale)),
+  inLanguage: locale,
+  about: {
+    '@type': 'Thing',
+    name: tagLabel,
+  },
+  mainEntity: {
+    '@type': 'Blog',
+    blogPost: posts.slice(0, 10).map((post) => ({
+      '@type': 'BlogPosting',
+      headline: post.title,
+      url: absoluteUrl(post.url),
+      datePublished: post.published_at,
+      dateModified: post.updated_at || post.published_at,
+      author: {
+        '@type': 'Person',
+        name: siteConfig.author,
+      },
+    })),
+  },
+};
+---
+<script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />
+<SidebarLayout locale={locale} tags={sidebarTags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
+  <SectionDividerStatic>
+    <div class="motion-card mb-8 rounded-2xl border border-white/40 bg-white/60 p-8 text-center shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/60">
+      <div class="inline-flex items-center gap-2 text-accent">
+        <!-- FiTag (inlined from react-icons for static markup) -->
+        <svg
+          class="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+          <line x1="7" y1="7" x2="7.01" y2="7" />
+        </svg>
+        <span class="type-small uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">
+          TAG ARCHIVE
+        </span>
+      </div>
+      <h1 class="type-title mt-2 font-semibold text-slate-900 dark:text-slate-50">
+        {tagLabel}
+      </h1>
+      <p class="type-small mt-2 text-slate-600 dark:text-slate-300">
+        {dictionary.tags.count(posts.length)}
+      </p>
+    </div>
+  </SectionDividerStatic>
+  <PostListWithControls client:load posts={posts} locale={locale} />
+</SidebarLayout>
+<ScrollReveal client:load />

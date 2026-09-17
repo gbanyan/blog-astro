@@ -1,32 +1,29 @@
 ---
 /**
- * Home page wrapper (default `zh-TW` locale, unprefixed route).
- * Replaces the Task-6 smoke index. Real markup lives in
- * `src/components/pages/home.astro`.
+ * Tags index wrapper (`/tags`, default locale). Real markup lives in
+ * `src/components/pages/tags-index.astro`.
  */
 import Layout from '@/layouts/layout.astro';
 import LayoutShell from '@/layouts/layout-shell.astro';
 import { loadContent } from '@/lib/content';
 import { getDictionary } from '@/lib/i18n/dictionaries';
-import { siteConfig } from '@/lib/config';
 import { metadataForPath } from '@/lib/seo';
 import type { Locale } from '@/lib/locales';
-import Home from '@/components/pages/home.astro';
+import TagsIndex from '@/components/pages/tags-index.astro';
 
 const locale: Locale = 'zh-TW';
 await loadContent();
 const dictionary = getDictionary(locale);
 const head = metadataForPath({
-  title: `${siteConfig.name} — ${dictionary.common.latestPosts}`,
-  description: dictionary.brand.description,
-  path: '/',
+  title: dictionary.tags.title,
+  description: dictionary.tags.description,
+  path: '/tags',
   locale,
 });
-head.openGraph.siteName = dictionary.brand.title;
 ---
 
 <Layout head={head} locale={locale}>
   <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
-    <Home locale={locale} />
+    <TagsIndex locale={locale} />
   </LayoutShell>
 </Layout>

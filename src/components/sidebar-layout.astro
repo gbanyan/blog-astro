@@ -1,0 +1,52 @@
+---
+import { RightSidebar } from './right-sidebar';
+import { SidebarDrawer } from './sidebar-drawer';
+import { clsx } from 'clsx';
+
+interface Props {
+  locale: string;
+  tags: { tag: string; slug: string; count: number }[];
+  aboutUrl: string;
+  avatarSrc: string;
+  variant?: 'default' | 'reading';
+}
+
+const { locale, tags, aboutUrl, avatarSrc, variant = 'default' } = Astro.props;
+const readingLayout = variant === 'reading';
+
+/**
+ * Static host for the source's `SidebarLayout` island. The desktop sidebar
+ * and the mobile drawer live in React islands (children cannot cross the
+ * Astro island boundary); the grid shell stays static.
+ */
+---
+<div
+  class:list={[
+    'grid items-start gap-8',
+    readingLayout
+      ? 'lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-14'
+      : 'lg:grid-cols-[minmax(0,3fr)_minmax(0,1.4fr)] lg:gap-12'
+  ]}
+>
+  <div class="min-w-0">
+    <slot />
+  </div>
+  <div class="hidden lg:block">
+    <RightSidebar
+      client:load
+      tags={tags}
+      aboutUrl={aboutUrl}
+      avatarSrc={avatarSrc}
+      locale={locale}
+      variant={variant}
+    />
+  </div>
+</div>
+<SidebarDrawer
+  client:load
+  tags={tags}
+  aboutUrl={aboutUrl}
+  avatarSrc={avatarSrc}
+  locale={locale}
+  variant={variant}
+/>

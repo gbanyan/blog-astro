@@ -1,0 +1,126 @@
+---
+import { getAllTagsWithCount } from '@/lib/tags';
+import { getSidebarData } from '@/lib/sidebar-data';
+import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import SidebarLayout from '@/components/sidebar-layout.astro';
+import SectionDividerStatic from '@/components/section-divider-static.astro';
+import { ScrollReveal } from '@/components/scroll-reveal';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dictionary = getDictionary(locale);
+const { tags: sidebarTags, aboutUrl, avatarSrc } = getSidebarData(locale);
+const tags = getAllTagsWithCount(locale);
+const topTags = tags.slice(0, 3);
+
+const colorClasses = [
+  'from-accent/60 to-accent/20',
+  'from-accent/50 to-accent/15',
+  'from-accent/40 to-accent/10',
+];
+
+// CollectionPage schema with ItemList (source: app/[locale]/tags/page.tsx).
+const collectionPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: dictionary.tags.title,
+  description: dictionary.tags.description,
+  url: absoluteUrl(localizedPath('/tags', locale)),
+  inLanguage: locale,
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: tags.map((tag, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: tag.tag,
+      url: absoluteUrl(localizedPath(`/tags/${tag.slug}`, locale)),
+      item: {
+        '@type': 'Thing',
+        name: tag.tag,
+        description: dictionary.tags.count(tag.count),
+      },
+    })),
+  },
+};
+---
+<script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />
+<section class="space-y-6">
+  <SidebarLayout locale={locale} tags={sidebarTags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
+    <SectionDividerStatic>
+      <div class="motion-card rounded-2xl border border-white/40 bg-white/60 p-8 text-center shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/60">
+        <div class="inline-flex items-center gap-2 text-accent">
+          <!-- FiTag (inlined from react-icons for static markup) -->
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+            <line x1="7" y1="7" x2="7.01" y2="7" />
+          </svg>
+          <span class="type-small uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400">
+            {dictionary.tags.title}
+          </span>
+        </div>
+        <h1 class="type-title mt-2 font-semibold text-slate-900 dark:text-slate-50">
+          {dictionary.tags.explore(tags.length)}
+        </h1>
+        <p class="type-small mt-2 text-slate-600 dark:text-slate-300">
+          {dictionary.tags.topTags}
+          {topTags.map((t) => t.tag).join('、')}
+        </p>
+      </div>
+    </SectionDividerStatic>
+
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {
+        tags.map(({ tag, slug, count }, index) => {
+          const color = colorClasses[index % colorClasses.length];
+          return (
+            <a
+              href={localizedPath(`/tags/${slug}`, locale)}
+              class="motion-card group flex flex-col rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-slate-900/60"
+            >
+              <span class:list={['mb-3 block h-1.5 w-16 rounded-full bg-gradient-to-r', color]} aria-hidden="true" />
+              <div class="flex items-center justify-between">
+                <h2 class="type-subtitle font-semibold text-slate-900 group-hover:text-accent dark:text-slate-50 dark:group-hover:text-accent">
+                  {tag}
+                </h2>
+                <span class="type-small text-slate-600 dark:text-slate-300">
+                  {dictionary.tags.count(count)}
+                </span>
+              </div>
+              <span class="mt-1 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <!-- FiTrendingUp (inlined from react-icons for static markup) -->
+                <svg
+                  class="h-3 w-3 text-orange-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+                {dictionary.tags.rank(index + 1)}
+              </span>
+            </a>
+          );
+        })
+      }
+    </div>
+  </SidebarLayout>
+</section>
+<ScrollReveal client:load />

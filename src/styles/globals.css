@@ -2236,3 +2236,36 @@ body {
 .dark .mermaid-sep {
   background: #475569;
 }
+
+/* PostLayout static host: the PostLayoutToc island toggles `toc-open` on the
+   `[data-post-layout]` root to drive these grid/content-width transitions
+   (replaces the source's conditional Tailwind arbitrary classes). */
+.post-layout-content {
+  max-width: 56rem;
+}
+.post-layout-wide .post-layout-content {
+  max-width: 64rem;
+}
+.post-layout.toc-open .post-layout-content {
+  max-width: 48rem;
+}
+@media (min-width: 64rem) {
+  .post-layout-grid {
+    grid-template-columns: 1fr 0rem;
+  }
+  .post-layout.toc-open .post-layout-grid {
+    grid-template-columns: 1fr 16rem;
+  }
+}
+
+/* Static SectionDivider bar (section-divider-static.astro): animates in
+   when the page's ScrollReveal island marks the sibling content reveal
+   visible — mirrors the source island's observer-on-wrapper behavior. */
+.section-divider > .scroll-divider-bar {
+  transform: scaleX(0.5);
+  opacity: 0.3;
+}
+.section-divider:has(> .scroll-reveal.is-visible) > .scroll-divider-bar {
+  transform: scaleX(1);
+  opacity: 1;
+}

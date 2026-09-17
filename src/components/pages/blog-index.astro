@@ -1,0 +1,65 @@
+---
+import { siteConfig } from '@/lib/config';
+import { getAllPostsSorted } from '@/lib/posts';
+import { getSidebarData } from '@/lib/sidebar-data';
+import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import SidebarLayout from '@/components/sidebar-layout.astro';
+import SectionDividerStatic from '@/components/section-divider-static.astro';
+import { PostListWithControls } from '@/components/post-list-with-controls';
+import { ScrollReveal } from '@/components/scroll-reveal';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dictionary = getDictionary(locale);
+const posts = await getAllPostsSorted(locale);
+const { tags, aboutUrl, avatarSrc } = getSidebarData(locale);
+
+// Blog schema (source: app/[locale]/blog/page.tsx). `post.url` is already
+// localized for this locale, so `localizedPath(post.url, locale)` is the
+// identity and collapses to `absoluteUrl(post.url)`.
+const blogSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  name: dictionary.common.allPosts,
+  description: dictionary.common.allPostsDescription,
+  url: absoluteUrl(localizedPath('/blog', locale)),
+  inLanguage: locale,
+  blogPost: posts.slice(0, 10).map((post) => ({
+    '@type': 'BlogPosting',
+    headline: post.title,
+    url: absoluteUrl(post.url),
+    datePublished: post.published_at,
+    dateModified: post.updated_at || post.published_at,
+    author: {
+      '@type': 'Person',
+      name: siteConfig.author,
+    },
+  })),
+};
+---
+<section class="space-y-4">
+  <script type="application/ld+json" set:html={JSON.stringify(blogSchema)} />
+  <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
+    <SectionDividerStatic>
+      <header class="space-y-1">
+        <h1 class="type-title font-semibold text-slate-900 dark:text-slate-50">
+          {dictionary.common.allPosts}
+        </h1>
+        <p class="type-small text-slate-500 dark:text-slate-400">
+          {dictionary.common.allPostsDescription}
+        </p>
+      </header>
+    </SectionDividerStatic>
+    <ScrollReveal client:load />
+    <PostListWithControls
+      client:load
+      posts={posts}
+      locale={locale}
+      initialSearch=""
+    />
+  </SidebarLayout>
+</section>
