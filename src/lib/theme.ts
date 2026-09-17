@@ -45,7 +45,10 @@ export const THEME_INIT_SNIPPET = `<script>
  * Theme state therefore lives on the document: the init snippet (or
  * setTheme) applies the class, and this hook re-syncs from a custom event
  * (same-tab toggles from ANY island), the storage event (cross-tab), and
- * system scheme changes.
+ * system scheme changes. Every sync path re-applies the document theme:
+ * cross-tab writes and OS scheme flips must recolor the page, and the
+ * detail payload must win over a storage re-read because storage writes
+ * can fail (private mode) after the preference was already applied.
  */
 export function useTheme(): {
   theme: ThemePreference;
@@ -56,10 +59,13 @@ export function useTheme(): {
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme | undefined>(undefined);
 
   useEffect(() => {
-    const sync = () => {
-      const preference = getStoredTheme();
+    const sync = (event?: Event) => {
+      const preference =
+        event instanceof CustomEvent && (event.detail === 'light' || event.detail === 'dark' || event.detail === 'system')
+          ? event.detail
+          : getStoredTheme();
       setThemeState(preference);
-      setResolvedTheme(resolveTheme(preference));
+      setResolvedTheme(applyTheme(preference));
     };
     sync();
     window.addEventListener(THEME_CHANGE_EVENT, sync);
@@ -80,7 +86,7 @@ export function useTheme(): {
       // Private-mode storage failures still apply the theme for the session.
     }
     applyTheme(preference);
-    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+    window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: preference }));
   }, []);
 
   return { theme, resolvedTheme, setTheme };
