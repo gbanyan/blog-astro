@@ -4,8 +4,8 @@
 /* Class-based dark mode for next-themes */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Auto-detect content in the submodule */
-@source "../content";
+/* Auto-detect content in the submodule (stylesheet lives in src/styles/) */
+@source "../../content";
 
 /* Tailwind v4 CSS-first theme configuration */
 @theme {
