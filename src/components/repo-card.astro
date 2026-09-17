@@ -1,0 +1,81 @@
+---
+import type { RepoSummary } from '@/lib/github';
+import { getLanguageColor } from '@/lib/github-lang-colors';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+
+interface Props {
+  repo: RepoSummary;
+  animationDelay?: number;
+  labels: Dictionary['repo'];
+  /** Pre-formatted `updatedAt` display string (locale-aware, host-side). */
+  updatedAtLabel?: string;
+}
+
+const { repo, animationDelay = 0, labels, updatedAtLabel } = Astro.props;
+const langColor = getLanguageColor(repo.language);
+
+/**
+ * Static port of the source `RepoCard` (no client interactivity); the
+ * `repo-card-enter` animation class is driven by globals.css.
+ */
+---
+<li
+  class:list={[
+    'motion-card group relative flex h-full flex-col rounded-2xl border border-white/40 bg-white/60 p-5 shadow-lg backdrop-blur-md transition-all hover:scale-[1.01] hover:shadow-xl dark:border-white/10 dark:bg-slate-900/60',
+    animationDelay > 0 && 'repo-card-enter'
+  ]}
+  style:animation-delay={animationDelay > 0 ? `${animationDelay}ms` : undefined}
+>
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-accent opacity-80 transition-transform duration-300 ease-out group-hover:scale-x-100"></div>
+  <div class="flex items-start justify-between gap-2">
+    <a
+      href={repo.htmlUrl}
+      target="_blank"
+      rel="noreferrer"
+      class="type-base inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors hover:text-accent dark:text-slate-50 dark:hover:text-accent"
+    >
+      {repo.name}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        class="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100"
+      >
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        <polyline points="15 3 21 3 21 9" />
+        <line x1="10" y1="14" x2="21" y2="3" />
+      </svg>
+    </a>
+    {repo.stargazersCount > 0 && (
+      <span class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+        ★ {repo.stargazersCount}
+      </span>
+    )}
+  </div>
+
+  {repo.description && (
+    <p class="mt-2 flex-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
+      {repo.description}
+    </p>
+  )}
+
+  <div class="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+    <span class="inline-flex items-center gap-1.5">
+      <span
+        class="h-2 w-2 shrink-0 rounded-full"
+        style={`background-color: ${langColor}`}
+        aria-hidden="true"
+      ></span>
+      {repo.language ?? labels.otherLanguage}
+    </span>
+    <span>
+      {labels.updatedAt}
+      {repo.updatedAt ? ` ${updatedAtLabel}` : ` ${labels.unknown}`}
+    </span>
+  </div>
+</li>

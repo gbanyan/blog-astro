@@ -1,0 +1,33 @@
+---
+import { siteConfig } from '@/lib/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForPath } from '@/lib/seo';
+import { absoluteUrl, type Locale } from '@/lib/locales';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import Projects from '@/components/pages/projects.astro';
+
+const locale: Locale = 'zh-TW';
+const dictionary = getDictionary(locale);
+
+const head = metadataForPath({
+  title: dictionary.projects.title,
+  description: dictionary.projects.description,
+  path: '/projects',
+  locale,
+  openGraph: {
+    images: [{ url: absoluteUrl(siteConfig.ogImage), alt: dictionary.projects.title }]
+  },
+  twitter: {
+    card: siteConfig.twitterCard,
+    title: dictionary.projects.title,
+    description: dictionary.projects.description,
+    images: [siteConfig.ogImage]
+  }
+});
+---
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <Projects locale={locale} dictionary={dictionary} />
+  </LayoutShell>
+</Layout>
