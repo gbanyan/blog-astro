@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { pages, posts } from '../src/lib/content.js';
+import { loadContent } from '../src/lib/content.js';
+
+const { pages, posts } = await loadContent();
 
 const eligiblePosts = posts.filter((post) => !post.sourcePath.includes('/en/'));
 const eligiblePages = pages.filter((page) => !page.sourcePath.includes('/en/'));

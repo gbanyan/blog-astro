@@ -12,9 +12,9 @@
   ],
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run sync-assets && npm run check-assets && astro build && npx pagefind --site dist --output-path dist/_pagefind",
+    "build": "npm run sync-assets && npm run check-i18n-content && npm run check-assets && astro build && npx pagefind --site dist --output-path dist/_pagefind",
     "preview": "astro preview",
-    "check-i18n": "node scripts/check-i18n.mjs",
+    "check-i18n": "node scripts/check-i18n.mjs --adapter scripts/i18n-validation-adapter.mjs",
     "check-i18n-content": "node scripts/check-i18n-content.mjs",
     "sync-assets": "node scripts/sync-assets.mjs",
     "check-assets": "node scripts/check-assets.mjs",

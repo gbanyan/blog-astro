@@ -1,4 +1,6 @@
-import { pages, posts } from '../src/lib/content.js';
+import { loadContent } from '../src/lib/content.js';
+
+const { pages, posts } = await loadContent();
 
 const BASE_URL = 'http://localhost:3000';
 

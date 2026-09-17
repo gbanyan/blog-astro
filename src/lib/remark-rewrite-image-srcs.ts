@@ -13,13 +13,16 @@ import { visit } from 'unist-util-visit';
  * dimensions to the rewritten srcs.
  */
 export function remarkRewriteImageSrcs() {
+  const rewrite = (node: { url: string }) => {
+    if (node.url.startsWith('../assets/')) {
+      node.url = node.url.replace('../assets', '/assets');
+    } else if (node.url.startsWith('assets/')) {
+      node.url = `/${node.url.replace(/^\/?/, '')}`;
+    }
+  };
+
   return (tree: Root) => {
-    visit(tree, ['image', 'definition'], (node) => {
-      if (node.url.startsWith('../assets/')) {
-        node.url = node.url.replace('../assets', '/assets');
-      } else if (node.url.startsWith('assets/')) {
-        node.url = `/${node.url.replace(/^\/?/, '')}`;
-      }
-    });
+    visit(tree, 'image', (node) => rewrite(node));
+    visit(tree, 'definition', (node) => rewrite(node));
   };
 }

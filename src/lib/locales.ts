@@ -2,10 +2,10 @@ import {
   defaultLocale as seedDefaultLocale,
   isLocale,
   locales as seedLocales,
-} from '@/lib/i18n/config';
-import { siteConfig } from '@/lib/config';
+} from './i18n/config.ts';
+import { siteConfig } from './config.ts';
 
-export { isLocale } from '@/lib/i18n/config';
+export { isLocale } from './i18n/config.ts';
 
 export const SUPPORTED_LOCALES = seedLocales;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
