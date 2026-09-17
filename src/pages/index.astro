@@ -1,14 +1,29 @@
 ---
-import '../styles/globals.css';
+/**
+ * Temporary smoke index (replaced by the real home page in Task 7).
+ * Renders the root-layout head for the default locale, matching the source
+ * root layout metadata (brand title/description, home canonical + hreflang).
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { siteConfig } from '@/lib/config';
+import { metadataForPath } from '@/lib/seo';
+import type { Locale } from '@/lib/locales';
+
+const locale: Locale = 'zh-TW';
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: dictionary.brand.title,
+  description: dictionary.brand.description,
+  path: '/',
+  locale,
+});
+head.openGraph.siteName = dictionary.brand.title;
 ---
 
-<html lang="zh-TW">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>blog-astro smoke</title>
-  </head>
-  <body>
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
     <h1>blog-astro skeleton OK</h1>
-  </body>
-</html>
+  </LayoutShell>
+</Layout>

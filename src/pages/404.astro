@@ -1,0 +1,42 @@
+---
+/**
+ * Port of app/[locale]/not-found.tsx. Astro serves this single static page
+ * for every unmatched path, so the locale is fixed to the default (zh-TW)
+ * and the home link is the unprefixed default-locale route.
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForPath } from '@/lib/seo';
+
+const locale = 'zh-TW';
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: dictionary.errors.notFoundTitle,
+  description: dictionary.errors.notFoundDescription,
+  path: '/404',
+  locale,
+});
+// Dead URLs should not be indexed; keep crawling of linked content.
+head.robots = { index: false, follow: true };
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <div class="flex min-h-[60vh] flex-col items-center justify-center px-4">
+      <div class="max-w-md text-center">
+        <h1 class="type-display mb-2 text-6xl font-bold text-slate-300 dark:text-slate-600">404</h1>
+        <h2 class="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-200">
+          {dictionary.errors.notFoundTitle}
+        </h2>
+        <p class="mb-8 text-slate-600 dark:text-slate-400">{dictionary.errors.notFoundDescription}</p>
+        <a
+          href="/"
+          class="inline-flex items-center rounded-lg bg-slate-800 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300"
+        >
+          {dictionary.common.backHome}
+        </a>
+      </div>
+    </div>
+  </LayoutShell>
+</Layout>

@@ -1,0 +1,39 @@
+---
+/**
+ * Port of components/layout-shell.tsx — a thin `.astro` host: site header
+ * (island host), content slot, footer, and the back-to-top island.
+ *
+ * `recentPosts` is derived exactly like the source root layout: the five
+ * newest posts of the page's locale, after `loadContent()` settles.
+ */
+import { loadContent } from '@/lib/content';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getAllPostsSorted } from '@/lib/posts';
+import type { Locale } from '@/lib/locales';
+import { BackToTop } from '@/components/back-to-top';
+import SiteFooter from '@/components/site-footer.astro';
+import SiteHeader from '@/components/site-header.astro';
+
+interface Props {
+  locale: Locale;
+  /** `Astro.url.pathname` — passed to islands that used `usePathname()`. */
+  currentPath: string;
+}
+
+const { locale, currentPath } = Astro.props;
+await loadContent();
+
+const labels = getDictionary(locale).common;
+const recentPosts = (await getAllPostsSorted(locale))
+  .slice(0, 5)
+  .map((p) => ({ title: p.title, url: p.url }));
+---
+
+<div class="flex min-h-screen flex-col">
+  <SiteHeader locale={locale} currentPath={currentPath} recentPosts={recentPosts} />
+  <main class="container mx-auto flex-1 px-4 py-6">
+    <slot />
+  </main>
+  <SiteFooter />
+  <BackToTop client:idle label={labels.backToTop} />
+</div>

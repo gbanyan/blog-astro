@@ -1,0 +1,134 @@
+---
+/**
+ * Root layout: `<html lang>`, full head assembly from the HeadModel contract
+ * (Task 4), configured fonts, the theme bootstrap script (Task 5), and
+ * Astro's client router.
+ *
+ * Ported from blog-nextjs `app/[locale]/layout.tsx`:
+ *   - Next `generateMetadata`  → head tags rendered from `HeadModel`
+ *   - `next/font/google`       → `<Font cssVariable>` (configured in astro.config.mjs)
+ *   - `next-themes` provider   → THEME_INIT_SNIPPET + `useTheme` (Task 5)
+ *   - `NextTopLoader`          → `<ClientRouter />` (astro:transitions)
+ *   - `JsonLd` component       → inline `<script type="application/ld+json">`
+ *   - `:root` accent `<style>` → set:html (Astro does not evaluate
+ *     expressions inside `<style>` tags; the source used a raw string)
+ */
+import { ClientRouter } from 'astro:transitions';
+import { Font } from 'astro:assets';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { siteConfig } from '@/lib/config';
+import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import type { HeadModel } from '@/lib/seo';
+import { THEME_INIT_SNIPPET } from '@/lib/theme';
+import '../styles/globals.css';
+
+interface Props {
+  head: HeadModel;
+  locale: Locale;
+}
+
+const { head, locale } = Astro.props;
+const dictionary = getDictionary(locale);
+const theme = siteConfig.theme;
+
+// Site-wide structured data, ported from the source root layout.
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: dictionary.brand.title,
+  description: dictionary.brand.description,
+  url: siteConfig.url,
+  inLanguage: locale,
+  author: {
+    '@type': 'Person',
+    name: siteConfig.author,
+    url: siteConfig.url,
+  },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteConfig.url}${localizedPath('/blog', locale)}?search={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  logo: `${siteConfig.url}${siteConfig.avatar}`,
+  sameAs: [
+    siteConfig.social.github,
+    siteConfig.social.twitter && `https://twitter.com/${siteConfig.social.twitter.replace('@', '')}`,
+    siteConfig.social.mastodon,
+  ].filter(Boolean),
+};
+
+const robotsContent = head.robots
+  ? [head.robots.index ? 'index' : 'noindex', head.robots.follow ? 'follow' : 'nofollow'].join(', ')
+  : null;
+
+const ogImage = head.openGraph.images[0];
+// Twitter resolves relative image URLs against the page, not the site —
+// the HeadModel keeps them as configured (relative for the default OG card),
+// so make them absolute before emission.
+let twitterImage = head.twitter.images[0];
+if (twitterImage && !/^https?:\/\//.test(twitterImage)) {
+  twitterImage = absoluteUrl(twitterImage);
+}
+
+const accentCss = `:root {
+  --color-accent: ${theme.accent};
+  --color-accent-soft: ${theme.accentSoft};
+  --color-accent-text-light: ${theme.accentTextLight};
+  --color-accent-text-dark: ${theme.accentTextDark};
+}`;
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{head.title}</title>
+    {head.description && <meta name="description" content={head.description} />}
+    <link rel="canonical" href={head.canonical} />
+    {
+      head.alternates.map(({ locale: altLocale, href }) => (
+        <link rel="alternate" hreflang={altLocale} href={href} />
+      ))
+    }
+    {robotsContent && <meta name="robots" content={robotsContent} />}
+
+    {head.openGraph.title && <meta property="og:title" content={head.openGraph.title} />}
+    {head.openGraph.description && <meta property="og:description" content={head.openGraph.description} />}
+    <meta property="og:url" content={head.openGraph.url} />
+    <meta property="og:site_name" content={head.openGraph.siteName} />
+    <meta property="og:locale" content={head.openGraph.locale} />
+    {ogImage && <meta property="og:image" content={ogImage.url} />}
+    {ogImage?.alt && <meta property="og:image:alt" content={ogImage.alt} />}
+
+    <meta name="twitter:card" content={head.twitter.card} />
+    {head.twitter.title && <meta name="twitter:title" content={head.twitter.title} />}
+    {head.twitter.description && <meta name="twitter:description" content={head.twitter.description} />}
+    {twitterImage && <meta name="twitter:image" content={twitterImage} />}
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <Font cssVariable="--font-display-latin" />
+    <Font cssVariable="--font-display-cjk" />
+
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+
+    <Fragment set:html={THEME_INIT_SNIPPET} />
+    <ClientRouter />
+  </head>
+  <body>
+    <style set:html={accentCss} />
+    <slot />
+  </body>
+</html>
