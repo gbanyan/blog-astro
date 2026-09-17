@@ -1,0 +1,45 @@
+---
+import { PostLayoutToc } from './post-layout-toc';
+
+interface Props {
+  locale: string;
+  hasToc?: boolean;
+  contentKey?: string;
+  wide?: boolean;
+}
+
+const { locale, hasToc = true, contentKey, wide = false } = Astro.props;
+
+/**
+ * Static host for the source's `PostLayout` island. The grid shell and the
+ * desktop TOC panel slot stay static; the toggle buttons, mobile drawer, and
+ * the (lazy) TOC live in the `PostLayoutToc` island, which toggles the
+ * `toc-open` class on this root to drive the CSS grid/content-width
+ * transitions defined in globals.css.
+ */
+---
+<div class:list={['post-layout relative', wide && 'post-layout-wide']}>
+  <div
+    data-post-layout-grid
+    class="post-layout-grid group grid gap-8 transition-all duration-500 ease-snappy"
+  >
+    <div class="min-w-0">
+      <div class="post-layout-content mx-auto transition-all duration-500 ease-snappy">
+        <slot />
+      </div>
+    </div>
+    <!-- Desktop Sidebar (TOC): panel content is portaled in by the island -->
+    <aside id="desktop-post-toc" class="hidden lg:block">
+      <div class="sticky top-24 h-[calc(100vh-6rem)] overflow-hidden">
+        <div id="desktop-post-toc-panel" />
+      </div>
+    </aside>
+  </div>
+
+  <PostLayoutToc
+    client:load
+    hasToc={hasToc}
+    contentKey={contentKey}
+    locale={locale}
+  />
+</div>

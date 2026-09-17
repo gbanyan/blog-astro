@@ -1,0 +1,65 @@
+---
+import {
+  loadContent,
+  getPagesByLocale,
+  allPagesByLocale,
+  type Page
+} from '@/lib/content';
+import { getPageBySlug } from '@/lib/posts';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForDocument } from '@/lib/seo';
+import { absoluteUrl, type Locale } from '@/lib/locales';
+import { siteConfig } from '@/lib/config';
+import { getCollection, render } from 'astro:content';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import ContentPage from '@/components/pages/content-page.astro';
+
+export async function getStaticPaths() {
+  await loadContent();
+  return getPagesByLocale('zh-TW').map((page) => ({
+    params: { slug: page.slug || page.flattenedPath }
+  }));
+}
+
+const { slug } = Astro.params;
+const locale: Locale = 'zh-TW';
+
+await loadContent();
+const dictionary = getDictionary(locale);
+const page: Page | undefined = getPageBySlug(slug, locale);
+
+const id = page?.flattenedPath;
+const entries = await getCollection('pages');
+const entry = id
+  ? entries.find((e) => e.id === id || e.id === `pages/${id}`)
+  : undefined;
+if (!page || !entry) {
+  throw new Error(`Unknown page slug: ${slug}`);
+}
+const { Content, headings } = await render(entry);
+const hasToc = headings.some((h) => h.depth === 2 || h.depth === 3);
+
+const head = metadataForDocument(page, allPagesByLocale);
+head.twitter = {
+  card: siteConfig.twitterCard,
+  title: page.title,
+  description: page.description || page.title,
+  images: [
+    page.feature_image
+      ? absoluteUrl(page.feature_image.replace('../assets', '/assets'))
+      : absoluteUrl(siteConfig.ogImage)
+  ]
+};
+---
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <ContentPage
+      page={page}
+      locale={locale}
+      dictionary={dictionary}
+      hasToc={hasToc}
+      Content={Content}
+    />
+  </LayoutShell>
+</Layout>

@@ -31,13 +31,23 @@ export interface HeadModel {
   canonical: string;
   alternates: { locale: string; href: string }[]; // hreflang pairs incl. x-default
   robots?: { index: boolean; follow: boolean };
+  /** Extra `<meta name="googlebot">` content (Next page-level `googleBot` mirror). */
+  googlebot?: string;
   openGraph: {
     title?: string;
     description?: string;
     url: string;
     siteName: string;
     locale: string;
-    images: { url: string; alt?: string }[];
+    /** Serialized as `og:type`; defaults to `website` (source root layout constant). */
+    type?: 'website' | 'article';
+    /** Serialized as `article:published_time`. */
+    publishedTime?: string;
+    /** Serialized as one `article:author` meta each. */
+    authors?: string[];
+    /** Serialized as one `article:tag` meta each. */
+    tags?: string[];
+    images: { url: string; alt?: string; width?: number; height?: number }[];
   };
   twitter: {
     card: string;
@@ -45,7 +55,7 @@ export interface HeadModel {
     description?: string;
     images: string[];
   };
-  sitemap: ReturnType<typeof localizedSitemapEntries>;
+  sitemap: SitemapEntry[];
 }
 
 /** Structural stand-in for Next's `MetadataRoute.Sitemap` record. */

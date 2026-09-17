@@ -1,0 +1,229 @@
+---
+import type { Component } from 'astro';
+import type { Post } from '@/lib/content';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+import type { Locale } from '@/lib/locales';
+import { getDocumentLocale } from '@/lib/locales';
+import { siteConfig } from '@/lib/config';
+import { getTagSlug } from '@/lib/tags';
+import { absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
+import { countWords, estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
+import { socialImageUrl, ogCardUrl } from '@/lib/og';
+import { PostStorylineNav } from '../post-storyline-nav';
+import { PostCard } from '../post-card';
+import { MermaidRenderer } from '../mermaid-renderer';
+import { GiscusComments } from '../giscus-comments';
+import { FooterCue } from '../footer-cue';
+import { ReadingProgress } from '../reading-progress';
+import { ScrollReveal } from '../scroll-reveal';
+import SectionDividerStatic from '../section-divider-static.astro';
+import PostLayout from '../post-layout.astro';
+
+interface Props {
+  post: Post;
+  locale: Locale;
+  dictionary: Dictionary;
+  hasMermaid: boolean;
+  relatedPosts: Post[];
+  newer: Post | null;
+  older: Post | null;
+  Content: Component;
+  hasToc: boolean;
+}
+
+const { post, locale, dictionary, hasMermaid, hasToc, relatedPosts, newer, older, Content } = Astro.props;
+
+const docLocale = getDocumentLocale(post);
+const postUrl = absoluteUrl(documentPath(post, locale));
+
+const imageUrl =
+  socialImageUrl(post.feature_image) ??
+  ogCardUrl({
+    locale,
+    title: post.title,
+    description: post.description,
+    tags: post.tags,
+    date: post.published_at,
+    author: post.authors?.[0] || siteConfig.author
+  });
+
+const wordCount = countWords(post.body?.raw || '');
+const readingMinutes = estimateReadingMinutes(post.body?.raw || '');
+
+// BlogPosting Schema
+const blogPostingSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  description: post.description || post.custom_excerpt || post.title,
+  image: imageUrl,
+  datePublished: post.published_at,
+  dateModified: post.updated_at || post.published_at,
+  author: {
+    '@type': 'Person',
+    name: post.authors?.[0] || siteConfig.author,
+    url: siteConfig.url
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: siteConfig.name,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${siteConfig.url}${siteConfig.avatar}`
+    }
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': postUrl
+  },
+  ...(post.tags && post.tags.length > 0
+    ? { keywords: post.tags.join(', '), articleSection: post.tags[0] }
+    : {}),
+  ...(wordCount > 0 ? { wordCount, readingTime: `${readingMinutes} min read` } : {}),
+  url: postUrl,
+  inLanguage: docLocale
+};
+
+// Speakable Schema for AEO
+const speakableSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SpeakableSpecification',
+  speakable: {
+    '@type': 'CSSSelector',
+    selector: ['article[data-toc-content]', '.prose h2', '.prose h3', '.prose p']
+  }
+};
+
+// BreadcrumbList Schema
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: dictionary.navigation.home,
+      item: absoluteUrl(documentPath({ url: '/' }, locale))
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: dictionary.common.allPosts,
+      item: absoluteUrl(documentPath({ url: '/blog' }, locale))
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: post.title,
+      item: postUrl
+    }
+  ]
+};
+---
+<script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(speakableSchema)} />
+<ReadingProgress client:idle />
+<ScrollReveal client:load />
+<PostLayout
+  hasToc={hasToc}
+  contentKey={post.slug || post.flattenedPath}
+  locale={locale}
+>
+  <div class="space-y-8">
+    <!-- Main content area for Pagefind indexing -->
+    <div data-pagefind-body>
+      <SectionDividerStatic>
+        <header class="mb-6 space-y-4 text-center">
+          {post.published_at && (
+            <p class="type-small text-slate-500 dark:text-slate-400">
+              {new Date(post.published_at as Date | string).toLocaleDateString(docLocale)}
+              {' · '}
+              {readingTimeLabel(readingMinutes, docLocale)}
+            </p>
+          )}
+          <h1 class="type-display font-bold leading-tight text-slate-900 dark:text-slate-50">
+            {post.title}
+          </h1>
+          {post.tags && (
+            <div class="flex flex-wrap justify-center gap-2 pt-2" data-pagefind-meta="tags">
+              {post.tags.map((t) => (
+                <a
+                  href={localizedPath(`/tags/${encodeURIComponent(getTagSlug(t))}`, locale)}
+                  class="tag-chip rounded-full bg-accent-soft px-3 py-1 text-sm text-accent-textLight dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:text-white"
+                >
+                  #{t}
+                </a>
+              ))}
+            </div>
+          )}
+        </header>
+      </SectionDividerStatic>
+
+      <SectionDividerStatic>
+        <article
+          data-toc-content={post.slug || post.flattenedPath}
+          class="prose prose-lg prose-slate mx-auto max-w-none dark:prose-invert"
+        >
+          {post.feature_image && (
+            <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
+              <img
+                src={post.feature_image.replace('../assets', '/assets')}
+                alt={post.title}
+                width={1200}
+                height={600}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                loading="eager"
+                fetchpriority="high"
+                class="w-full rounded-xl shadow-lg"
+              />
+            </div>
+          )}
+          <div>
+            <Content />
+          </div>
+          {hasMermaid && <MermaidRenderer client:idle labels={dictionary.mermaid} />}
+        </article>
+      </SectionDividerStatic>
+    </div>
+
+    <FooterCue client:idle label={dictionary.common.footerCue} />
+
+    <!-- Exclude navigation and related posts from search indexing -->
+    <div data-pagefind-ignore>
+      <SectionDividerStatic>
+        <PostStorylineNav
+          client:load
+          current={post}
+          newer={newer}
+          older={older}
+          labels={dictionary.common}
+        />
+      </SectionDividerStatic>
+
+      {relatedPosts.length > 0 && (
+        <SectionDividerStatic>
+          <section class="space-y-6 rounded-2xl border border-slate-200/60 bg-slate-50/50 p-8 dark:border-slate-800 dark:bg-slate-900/30">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="type-subtitle font-semibold text-slate-900 dark:text-slate-50">
+                {dictionary.common.relatedPosts}
+              </h2>
+              <p class="type-small text-slate-500 dark:text-slate-400">
+                {dictionary.common.relatedPostsDescription}
+              </p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {relatedPosts.map((related) => (
+                <PostCard client:load post={related} showTags={false} />
+              ))}
+            </div>
+          </section>
+        </SectionDividerStatic>
+      )}
+
+      <SectionDividerStatic>
+        <GiscusComments client:visible locale={locale} />
+      </SectionDividerStatic>
+    </div>
+  </div>
+</PostLayout>

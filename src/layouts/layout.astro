@@ -116,6 +116,7 @@ const accentCss = `:root {
         <meta name="googlebot" content={ROOT_GOOGLEBOT} />
       </>
     )}
+    {head.googlebot && <meta name="googlebot" content={head.googlebot} />}
 
     {head.openGraph.title && <meta property="og:title" content={head.openGraph.title} />}
     {head.openGraph.description && <meta property="og:description" content={head.openGraph.description} />}
@@ -123,8 +124,13 @@ const accentCss = `:root {
     <meta property="og:site_name" content={head.openGraph.siteName} />
     <meta property="og:locale" content={head.openGraph.locale} />
     {ogImage && <meta property="og:image" content={ogImage.url} />}
+    {ogImage?.width && <meta property="og:image:width" content={ogImage.width} />}
+    {ogImage?.height && <meta property="og:image:height" content={ogImage.height} />}
     {ogImage?.alt && <meta property="og:image:alt" content={ogImage.alt} />}
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={head.openGraph.type ?? 'website'} />
+    {head.openGraph.publishedTime && <meta property="article:published_time" content={head.openGraph.publishedTime} />}
+    {head.openGraph.authors?.map((author) => <meta property="article:author" content={author} />)}
+    {head.openGraph.tags?.map((tag) => <meta property="article:tag" content={tag} />)}
 
     <meta name="twitter:card" content={head.twitter.card} />
     {head.twitter.title && <meta name="twitter:title" content={head.twitter.title} />}
