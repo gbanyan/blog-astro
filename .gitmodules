@@ -1,0 +1,3 @@
+[submodule "content"]
+	path = content
+	url = ssh://git@git.gbanyan.net:30009/personal/personal-blog.git
