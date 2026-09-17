@@ -6,8 +6,7 @@ import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import { HeroSection } from '@/components/hero-section';
-import { PostListItem } from '@/components/post-list-item';
-import { TimelineWrapper } from '@/components/timeline-wrapper';
+import PostListItem from '../post-list-item.astro';
 
 interface Props {
   locale: Locale;
@@ -70,16 +69,19 @@ const collectionPageSchema = {
             {dictionary.common.allPosts} →
           </a>
         </header>
-        <TimelineWrapper client:load>
-          {posts.map((post, index) => (
-            <PostListItem
-              client:load
-              post={post}
-              priority={index === 0}
-              variant="reading"
-            />
-          ))}
-        </TimelineWrapper>
+        <!-- Static timeline: ports TimelineWrapper's mounted-state markup
+             (spine + per-item connector ticks) without a client island. -->
+        <div class="relative pl-6 md:pl-8">
+          <span class="pointer-events-none absolute left-2 top-0 h-full w-[2px] rounded-full bg-accent/40 md:left-3" aria-hidden="true"></span>
+          <div class="space-y-4">
+            {posts.map((post, index) => (
+              <div class="relative pl-5 sm:pl-8">
+                <span class="pointer-events-none absolute left-0 top-1/2 h-px w-5 -translate-x-full -translate-y-1/2 bg-gradient-to-r from-transparent via-accent/30 to-transparent sm:w-8" aria-hidden="true"></span>
+                <PostListItem post={post} priority={index === 0} variant="reading" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   </SidebarLayout>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Post } from '@/lib/content';
 import { FiArrowDown, FiArrowUp, FiSearch, FiList } from 'react-icons/fi';
 import { siteConfig } from '@/lib/config';
@@ -23,6 +23,13 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
   const [sortOrder, setSortOrder] = useState<SortOrder>('new');
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
+
+  // Deep links (`/blog?q=...`) are client-side: static prerender can't read
+  // the query param, so seed the search box from the URL at mount.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) setSearchTerm(q);
+  }, []);
 
   const size = pageSize ?? siteConfig.postsPerPage ?? 5;
 

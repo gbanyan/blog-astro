@@ -7,6 +7,9 @@ import {
   stripHtml,
   truncateText,
   formatRelativeTime,
+  parseMastodonUrl,
+  fetchAccountId,
+  fetchStatuses,
   type MastodonStatus
 } from '@/lib/mastodon';
 import { siteConfig } from '@/lib/config';
@@ -188,13 +191,16 @@ export function MastodonFeed({ locale, labels }: { locale: Locale; labels: Dicti
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!siteConfig.social.mastodon) return;
+    const mastodonUrl = siteConfig.social.mastodon;
+    if (!mastodonUrl) return;
     let cancelled = false;
     ;(async () => {
       try {
-        const res = await fetch('/api/mastodon', { cache: 'no-store' });
-        const data = await res.json();
-        const list: MastodonStatus[] | null = Array.isArray(data.statuses) ? data.statuses : null;
+        const parsed = parseMastodonUrl(mastodonUrl);
+        if (!parsed) throw new Error('unparseable mastodon url');
+        const accountId = await fetchAccountId(parsed.instance, parsed.username);
+        if (!accountId) throw new Error('account lookup failed');
+        const list = await fetchStatuses(parsed.instance, accountId, 5);
         if (!cancelled) {
           setStatuses(list);
           setLoading(false);

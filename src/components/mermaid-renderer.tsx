@@ -289,13 +289,13 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
 
   useEffect(() => {
     const figures = document.querySelectorAll<HTMLElement>(
-      'figure[data-rehype-pretty-code-figure]'
+      'pre.astro-code[data-language="mermaid"]'
     );
 
     const entries: typeof containersRef.current = [];
 
     figures.forEach((figure) => {
-      const code = figure.querySelector('code[data-language="mermaid"]');
+      const code = figure.querySelector('code');
       if (!code) return;
 
       const source = code.textContent?.trim() ?? '';

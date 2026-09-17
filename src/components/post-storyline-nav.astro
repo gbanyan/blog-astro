@@ -1,0 +1,84 @@
+---
+import type { Post } from '@/lib/content';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+
+interface Props {
+  current: Post;
+  newer?: Post;
+  older?: Post;
+  labels: Dictionary['common'];
+}
+
+const { newer, older, labels } = Astro.props;
+
+/**
+ * Static port of the source server component `PostStorylineNav` — pure
+ * presentational nav, no client interactivity. `current` stays in the
+ * contract for parity (unused).
+ */
+---
+<nav aria-label={labels.articleNavigation} class="relative mt-10">
+  <div class="relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-gradient-to-r from-white via-slate-50 to-white px-6 py-8 shadow-lg dark:border-slate-800/70 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900">
+    <div class="pointer-events-none absolute inset-x-12 top-1/2 hidden md:block">
+      <div class="relative flex items-center text-slate-200 dark:text-slate-700">
+        <span class="h-0 w-0 -translate-x-3 border-y-[7px] border-y-transparent border-r-[14px] border-r-current"></span>
+        <span class="flex-1 border-t border-dashed border-current"></span>
+        <span class="h-0 w-0 translate-x-3 rotate-180 border-y-[7px] border-y-transparent border-r-[14px] border-r-current"></span>
+      </div>
+    </div>
+    <div class="relative grid gap-6 md:grid-cols-[1fr_auto_1fr] md:items-center">
+      {
+        !older ? (
+          <div
+            class:list={[
+              'flex flex-col gap-1 text-slate-400',
+              'items-end text-right'
+            ]}
+          >
+            <p class="text-[11px] uppercase tracking-[0.4em]">{labels.previousPost}</p>
+            <p class="text-base font-semibold">{labels.firstPost}</p>
+          </div>
+        ) : (
+          <a
+            href={older.url}
+            rel="prev"
+            class="group flex flex-col gap-1 text-center transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:focus-visible:ring-blue-300 items-end text-right"
+          >
+            <p class="text-[11px] uppercase tracking-[0.4em] text-slate-400 transition group-hover:text-blue-500 dark:text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mr-1 inline h-3 w-3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              {labels.previousPost}
+            </p>
+            <p class="text-lg font-semibold leading-snug tracking-tight text-slate-900 transition group-hover:text-blue-600 dark:text-slate-50 dark:group-hover:text-blue-300">
+              {older.title}
+            </p>
+            <span class="mt-2 h-0.5 w-16 rounded-full bg-slate-200 transition group-hover:w-24 group-hover:bg-blue-400 dark:bg-slate-700 self-end"></span>
+          </a>
+        )
+      }
+      <div class="hidden flex-col items-center gap-2 text-center text-xs uppercase tracking-[0.4em] text-slate-400 md:flex">
+        <span class="h-2 w-2 rounded-full bg-blue-500" aria-hidden="true"></span>
+        <span>{labels.youAreHere}</span>
+      </div>
+      {
+        newer ? (
+          <a
+            href={newer.url}
+            rel="next"
+            class="group flex flex-col gap-1 text-center transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:focus-visible:ring-blue-300 items-start text-left"
+          >
+            <p class="text-[11px] uppercase tracking-[0.4em] text-slate-400 transition group-hover:text-blue-500 dark:text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mr-1 inline h-3 w-3"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              {labels.nextPost}
+            </p>
+            <p class="text-lg font-semibold leading-snug tracking-tight text-slate-900 transition group-hover:text-blue-600 dark:text-slate-50 dark:group-hover:text-blue-300">
+              {newer.title}
+            </p>
+            <span class="mt-2 h-0.5 w-16 rounded-full bg-slate-200 transition group-hover:w-24 group-hover:bg-blue-400 dark:bg-slate-700 self-start"></span>
+          </a>
+        ) : (
+          <div class="hidden" aria-hidden="true"></div>
+        )
+      }
+    </div>
+  </div>
+</nav>

@@ -9,8 +9,8 @@ import { getTagSlug } from '@/lib/tags';
 import { absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
 import { countWords, estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
 import { socialImageUrl, ogCardUrl } from '@/lib/og';
-import { PostStorylineNav } from '../post-storyline-nav';
-import { PostCard } from '../post-card';
+import PostStorylineNav from '../post-storyline-nav.astro';
+import PostCard from '../post-card.astro';
 import { MermaidRenderer } from '../mermaid-renderer';
 import { GiscusComments } from '../giscus-comments';
 import { FooterCue } from '../footer-cue';
@@ -214,7 +214,7 @@ const breadcrumbSchema = {
             </div>
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {relatedPosts.map((related) => (
-                <PostCard client:load post={related} showTags={false} />
+                <PostCard post={related} showTags={false} />
               ))}
             </div>
           </section>
