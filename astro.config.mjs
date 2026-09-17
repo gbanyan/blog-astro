@@ -10,6 +10,7 @@ import { visit } from 'unist-util-visit';
 import { rehypeCallouts } from './src/lib/rehype-callouts';
 import { rehypeLocalizeLinks } from './src/lib/rehype-localize-links';
 import { rehypeOptimizeImages } from './src/lib/rehype-optimize-images';
+import { remarkRewriteImageSrcs } from './src/lib/remark-rewrite-image-srcs';
 
 // Velite hard-coded allowDangerousHtml; the existing rendered-content
 // contract drops raw HTML blocks, so remove them before Astro's
@@ -35,7 +36,7 @@ export default defineConfig({
     // smartypants OFF (the Velite pipeline never applied typography
     // transforms — keep the rendered-output contract byte-comparable).
     processor: unified({
-      remarkPlugins: [remarkRemoveRawHtml],
+      remarkPlugins: [remarkRemoveRawHtml, remarkRewriteImageSrcs],
       rehypePlugins: [
         rehypeCallouts,
         rehypeSlug,
