@@ -3,6 +3,9 @@ import { readdir } from 'node:fs/promises';
 
 // Run against `wrangler dev`, or pass the production origin after deployment.
 const origin = process.argv[2] ?? 'http://127.0.0.1:4413';
+// For production, pass paths observed in the deployed search's Network panel;
+// CI and local builds can produce different index hashes.
+const deployedSearchPaths = process.argv.slice(3);
 const request = (path, options) => fetch(new URL(path, origin), {
   redirect: 'manual',
   signal: AbortSignal.timeout(20000),
@@ -47,7 +50,8 @@ for (const [directory, extension] of [['index', 'pf_index'], ['fragment', 'pf_fr
   assert.ok(files.length > 0, `missing built Pagefind ${directory}`);
   assert.ok(files.every((file) => new RegExp(`^[a-z-]+_[a-f0-9]+\\.${extension}$`).test(file)),
     `Pagefind ${directory} must only contain fingerprinted payloads`);
-  const path = `/_pagefind/${directory}/${files.sort()[0]}`;
+  const path = deployedSearchPaths.find((path) => path.startsWith(`/_pagefind/${directory}/`))
+    ?? `/_pagefind/${directory}/${files.sort()[0]}`;
   const response = await request(path);
   assert.equal(response.status, 200, path);
   assert.equal(response.headers.get('cache-control'), immutable, path);

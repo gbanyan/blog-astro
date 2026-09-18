@@ -88,8 +88,10 @@ returned HTTP 403. No zone-wide configuration was changed.
   repeat network validation for those unchanged payloads, not this entire
   bundle on every search.
 - Delivery checks now verify hashed search payload headers and entry freshness.
-  They use filenames from the local build, so production checks should run
-  against the matching deployed build.
+  By default they use filenames from the local build. CI can produce different
+  hashes, so pass the live search's index/fragment paths as extra arguments
+  when checking production: `npm run check-delivery -- https://blog.gbanyan.net
+  /_pagefind/index/<live-file>.pf_index /_pagefind/fragment/<live-file>.pf_fragment`.
 - A local Chrome repeat-visit check for the English `Cloudflare` query loaded
   one index and one result fragment: 36,931 transferred bytes on the first
   visit, zero on the second. Both searches returned the same result. The test
