@@ -1,0 +1,29 @@
+---
+/**
+ * Tags index wrapper (`/en/tags`, English locale). Real markup lives in
+ * `src/components/pages/tags-index.astro`.
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { loadContent } from '@/lib/content';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForPath } from '@/lib/seo';
+import type { Locale } from '@/lib/locales';
+import TagsIndex from '@/components/pages/tags-index.astro';
+
+const locale: Locale = 'en';
+await loadContent();
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: dictionary.tags.title,
+  description: dictionary.tags.description,
+  path: '/tags',
+  locale,
+});
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <TagsIndex locale={locale} />
+  </LayoutShell>
+</Layout>

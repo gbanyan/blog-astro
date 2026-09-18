@@ -1,0 +1,30 @@
+---
+/**
+ * Home page wrapper (`/en`, English locale). Replaces the zh-TW twin in
+ * `src/pages/index.astro`; real markup lives in `src/components/pages/home.astro`.
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { loadContent } from '@/lib/content';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { siteConfig } from '@/lib/config';
+import { metadataForPath } from '@/lib/seo';
+import type { Locale } from '@/lib/locales';
+import Home from '@/components/pages/home.astro';
+
+const locale: Locale = 'en';
+await loadContent();
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: `${siteConfig.name} — ${dictionary.common.latestPosts}`,
+  description: dictionary.brand.description,
+  path: '/',
+  locale,
+});
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <Home locale={locale} />
+  </LayoutShell>
+</Layout>

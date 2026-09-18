@@ -17,7 +17,7 @@ const { tags, aboutUrl, avatarSrc } = getSidebarData(locale);
 /** Fetched at build time (GitHub API; empty list when GITHUB_USERNAME is unset). */
 const repos = await fetchPublicRepos();
 
-const dateLabel = (value: string) => new Date(value).toLocaleDateString('zh-TW');
+const dateLabel = (value: string) => new Date(value).toLocaleDateString(locale === 'en' ? 'en-US' : 'zh-TW');
 ---
 <section class="space-y-4">
   <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>

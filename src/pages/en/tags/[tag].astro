@@ -1,0 +1,54 @@
+---
+/**
+ * Tag archive wrapper (`/en/tags/[tag]`, English locale). Real markup lives in
+ * `src/components/pages/tag-detail.astro`.
+ *
+ * Slug derivation matches the zh-TW twin (dedup over every tag slug of the
+ * locale's posts) and the adapter's tag URL contract (`getTagSlug`).
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { loadContent, getPostsByLocale } from '@/lib/content';
+import { getTagSlug } from '@/lib/tags';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForPath } from '@/lib/seo';
+import type { Locale } from '@/lib/locales';
+import TagDetail from '@/components/pages/tag-detail.astro';
+
+const locale: Locale = 'en';
+
+export async function getStaticPaths() {
+  await loadContent();
+  const seen = new Set<string>();
+  const paths: { params: { tag: string } }[] = [];
+  for (const post of getPostsByLocale('en')) {
+    for (const tag of post.tags ?? []) {
+      const slug = getTagSlug(tag);
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+      paths.push({ params: { tag: slug } });
+    }
+  }
+  return paths;
+}
+
+const { tag: slug } = Astro.params;
+await loadContent();
+const dictionary = getDictionary(locale);
+// The source titles the page with the original tag label (not the slug).
+const tagLabel = getPostsByLocale(locale)
+  .flatMap((post) => post.tags ?? [])
+  .find((t) => getTagSlug(t) === slug) ?? slug;
+const head = metadataForPath({
+  title: `${dictionary.tags.title}: ${tagLabel}`,
+  description: `${dictionary.tags.title}: ${tagLabel}`,
+  path: `/tags/${slug}`,
+  locale,
+});
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <TagDetail locale={locale} tagSlug={slug} />
+  </LayoutShell>
+</Layout>

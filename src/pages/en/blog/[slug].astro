@@ -1,0 +1,98 @@
+---
+import {
+  loadContent,
+  getPostsByLocale,
+  allPostsByLocale,
+  type Post
+} from '@/lib/content';
+import { getPostBySlug, getRelatedPosts, getPostNeighbors } from '@/lib/posts';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForDocument } from '@/lib/seo';
+import { socialImageUrl, ogCardUrl } from '@/lib/og';
+import { getDocumentLocale, isPlaceholderDocument, localeToOpenGraph, type Locale } from '@/lib/locales';
+import { siteConfig } from '@/lib/config';
+import { getCollection, render } from 'astro:content';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import BlogPost from '@/components/pages/blog-post.astro';
+
+export async function getStaticPaths() {
+  await loadContent();
+  return getPostsByLocale('en').map((post) => ({
+    params: { slug: post.slug || post.flattenedPath }
+  }));
+}
+
+const { slug } = Astro.params;
+const locale: Locale = 'en';
+
+await loadContent();
+const dictionary = getDictionary(locale);
+const post: Post | undefined = getPostBySlug(slug, locale);
+
+// The entry's `id` matches the adapter's `flattenedPath` (collection prefix
+// tolerated for both conventions).
+const id = post?.flattenedPath;
+const entries = await getCollection('posts');
+const entry = id
+  ? entries.find((e) => e.id === id || e.id === `posts/${id}`)
+  : undefined;
+if (!post || !entry) {
+  throw new Error(`Unknown post slug: ${slug} (post=${!!post}, entryId=${id})`);
+}
+const { Content, headings } = await render(entry);
+const hasToc = headings.some((h) => h.depth === 2 || h.depth === 3);
+const hasMermaid =
+  /data-language="mermaid"|language-mermaid/.test(post.body.html);
+
+const relatedPosts = await getRelatedPosts(post, 3);
+const neighbors = await getPostNeighbors(post);
+
+const head = metadataForDocument(post, allPostsByLocale);
+head.googlebot = isPlaceholderDocument(post) ? 'noindex, follow' : 'index, follow';
+
+const imageUrl =
+  socialImageUrl(post.feature_image) ??
+  ogCardUrl({
+    locale,
+    title: post.title,
+    description: post.description,
+    tags: post.tags,
+    date: post.published_at,
+    author: post.authors?.[0] || siteConfig.author
+  });
+head.openGraph = {
+  ...head.openGraph,
+  title: post.title,
+  description: post.description || post.title,
+  type: 'article',
+  locale: localeToOpenGraph(getDocumentLocale(post)),
+  publishedTime: post.published_at
+    ? new Date(post.published_at as Date | string).toISOString()
+    : undefined,
+  authors: post.authors?.length ? post.authors : [siteConfig.author],
+  tags: post.tags,
+  images: [{ url: imageUrl, width: 1200, height: 630, alt: post.title }]
+};
+head.twitter = {
+  card: 'summary_large_image',
+  title: post.title,
+  description: post.description || post.title,
+  images: [imageUrl]
+};
+---
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <BlogPost
+      post={post}
+      locale={locale}
+      dictionary={dictionary}
+      hasToc={hasToc}
+      hasMermaid={hasMermaid}
+      relatedPosts={relatedPosts}
+      newer={neighbors.newer}
+      older={neighbors.older}
+      Content={Content}
+    />
+  </LayoutShell>
+</Layout>

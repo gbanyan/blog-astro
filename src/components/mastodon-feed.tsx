@@ -17,9 +17,10 @@ import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 /**
  * Mastodon feed card.
- * Data is fetched server-side via the /api/mastodon route handler so the
- * browser never talks to the external instance directly, while the
- * lazy-rendered client card stays interactive.
+ * Data is fetched client-side on mount: the component resolves the account
+ * id from the configured profile URL and then pulls the latest statuses
+ * directly from the Mastodon instance via the public API. Best-effort — on
+ * lookup or network failure it renders an empty feed.
  */
 function FeedSkeleton() {
   return (

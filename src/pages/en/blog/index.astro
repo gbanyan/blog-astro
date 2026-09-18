@@ -1,0 +1,29 @@
+---
+/**
+ * Blog index wrapper (`/en/blog`, English locale). Real markup lives in
+ * `src/components/pages/blog-index.astro`.
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { loadContent } from '@/lib/content';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { metadataForPath } from '@/lib/seo';
+import type { Locale } from '@/lib/locales';
+import BlogIndex from '@/components/pages/blog-index.astro';
+
+const locale: Locale = 'en';
+await loadContent();
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: dictionary.common.allPosts,
+  description: dictionary.common.allPostsDescription,
+  path: '/blog',
+  locale,
+});
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <BlogIndex locale={locale} />
+  </LayoutShell>
+</Layout>
