@@ -55,6 +55,13 @@ labels. Keep diagram typography isolated from article styles so resizing does
 not change text dimensions after Mermaid measures them. Run `npm run verify`
 for the production build, locale validation, lint, and unit tests.
 
+For article sidebar changes, use the same local browser setup to check the
+contents toggle at desktop width: it must reveal heading links, navigate to a
+heading, and collapse again on both Chinese and English articles. At mobile
+width, verify the contents drawer opens and Escape closes it. The static
+`PostLayout` root must retain `data-post-layout` and `group` so the React island
+can find its panel and apply the open-state layout styles.
+
 ## Architecture
 
 - **Astro 7, static output** (no SSR adapter). i18n routing:

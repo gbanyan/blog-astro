@@ -18,10 +18,10 @@ const { locale, hasToc = true, contentKey, wide = false } = Astro.props;
  * transitions defined in globals.css.
  */
 ---
-<div class:list={['post-layout relative', wide && 'post-layout-wide']}>
+<div data-post-layout class:list={['post-layout group relative', wide && 'post-layout-wide']}>
   <div
     data-post-layout-grid
-    class="post-layout-grid group grid gap-8 transition-all duration-500 ease-snappy"
+    class="post-layout-grid grid gap-8 transition-all duration-500 ease-snappy"
   >
     <div class="min-w-0">
       <div class="post-layout-content mx-auto transition-all duration-500 ease-snappy">
