@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 
 import { loadContent, type Post, type Page } from '@/lib/content';
-import { isPlaceholderDocument } from '@/lib/locales';
 import { defaultCardInput, renderOgCard, type OgCardInput } from '@/lib/og-render';
 
 // Route-specific Params typing (catch-all slug: string[]) isn't expressible
@@ -14,9 +13,9 @@ export const getStaticPaths = async () => {
     ...pages.map((doc) => ({ doc, collection: 'pages' as const })),
   ];
 
-  const documentPaths = documents
-    .filter(({ doc }) => !isPlaceholderDocument(doc))
-    .map(({ doc, collection }) => ({
+  // Cards for ALL documents (placeholders included): their (noindex) pages
+  // still emit og:image and the source route served cards for any document.
+  const documentPaths = documents.map(({ doc, collection }) => ({
       params: { slug: `${collection}/${doc.flattenedPath}` },
       props: {
         input: {
