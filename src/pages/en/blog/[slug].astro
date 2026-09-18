@@ -8,7 +8,7 @@ import {
 import { getPostBySlug, getRelatedPosts, getPostNeighbors } from '@/lib/posts';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { metadataForDocument } from '@/lib/seo';
-import { socialImageUrl, ogCardUrl } from '@/lib/og';
+import { socialImageUrl, documentOgUrl } from '@/lib/og';
 import { getDocumentLocale, isPlaceholderDocument, localeToOpenGraph, type Locale } from '@/lib/locales';
 import { siteConfig } from '@/lib/config';
 import { getCollection, render } from 'astro:content';
@@ -51,16 +51,7 @@ const neighbors = await getPostNeighbors(post);
 const head = metadataForDocument(post, allPostsByLocale);
 head.googlebot = isPlaceholderDocument(post) ? 'noindex, follow' : 'index, follow';
 
-const imageUrl =
-  socialImageUrl(post.feature_image) ??
-  ogCardUrl({
-    locale,
-    title: post.title,
-    description: post.description,
-    tags: post.tags,
-    date: post.published_at,
-    author: post.authors?.[0] || siteConfig.author
-  });
+const imageUrl = socialImageUrl(post.feature_image) ?? documentOgUrl(post);
 head.openGraph = {
   ...head.openGraph,
   title: post.title,

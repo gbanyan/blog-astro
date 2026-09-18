@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ogCardUrl, socialImageUrl } from '@/lib/og';
+import { documentOgUrl, socialImageUrl } from '@/lib/og';
+import type { Page, Post } from '@/lib/content';
 
 describe('socialImageUrl', () => {
   it('rewrites ../assets to the /assets public root', () => {
@@ -24,22 +25,31 @@ describe('socialImageUrl', () => {
   });
 });
 
-describe('ogCardUrl', () => {
-  it('builds the /api/og endpoint with locale and title', () => {
-    const url = ogCardUrl({ locale: 'zh-TW', title: '測試' });
-    expect(url.startsWith('https://blog.gbanyan.net/api/og?')).toBe(true);
-    expect(url).toContain('locale=zh-TW');
-    expect(url).toContain('title=');
+describe('documentOgUrl', () => {
+  const post = {
+    __ignoredType: 'Post',
+    flattenedPath: 'my-post',
+  } as unknown as Post;
+
+  const enPost = {
+    __ignoredType: 'Post',
+    flattenedPath: 'en/my-post',
+  } as unknown as Post;
+
+  const page = {
+    __ignoredType: 'Page',
+    flattenedPath: 'about',
+  } as unknown as Page;
+
+  it('builds the static /og path from the collection and flattenedPath', () => {
+    expect(documentOgUrl(post)).toBe('https://blog.gbanyan.net/og/posts/my-post.png');
   });
 
-  it('adds description when provided', () => {
-    const url = ogCardUrl({ locale: 'en', title: 'T', description: 'desc here' });
-    expect(url).toContain('description=');
+  it('keeps the en segment for English documents (uniqueness)', () => {
+    expect(documentOgUrl(enPost)).toBe('https://blog.gbanyan.net/og/posts/en/my-post.png');
   });
 
-  it('slices tags to the first three', () => {
-    const url = ogCardUrl({ locale: 'en', title: 'T', tags: ['a', 'b', 'c', 'd'] });
-    expect(url).toContain('tags=a%2Cb%2Cc');
-    expect(url).not.toContain('d');
+  it('routes pages under /og/pages/', () => {
+    expect(documentOgUrl(page)).toBe('https://blog.gbanyan.net/og/pages/about.png');
   });
 });

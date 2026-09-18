@@ -8,7 +8,7 @@ import { siteConfig } from '@/lib/config';
 import { getTagSlug } from '@/lib/tags';
 import { absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
 import { countWords, estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
-import { socialImageUrl, ogCardUrl } from '@/lib/og';
+import { socialImageUrl, documentOgUrl } from '@/lib/og';
 import PostStorylineNav from '../post-storyline-nav.astro';
 import PostCard from '../post-card.astro';
 import { MermaidRenderer } from '../mermaid-renderer';
@@ -37,15 +37,7 @@ const docLocale = getDocumentLocale(post);
 const postUrl = absoluteUrl(documentPath(post, locale));
 
 const imageUrl =
-  socialImageUrl(post.feature_image) ??
-  ogCardUrl({
-    locale,
-    title: post.title,
-    description: post.description,
-    tags: post.tags,
-    date: post.published_at,
-    author: post.authors?.[0] || siteConfig.author
-  });
+  socialImageUrl(post.feature_image) ?? documentOgUrl(post);
 
 const wordCount = countWords(post.body?.raw || '');
 const readingMinutes = estimateReadingMinutes(post.body?.raw || '');
