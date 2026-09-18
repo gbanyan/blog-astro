@@ -14,6 +14,7 @@ import { DevEnvDeviceHero } from '../dev-env-device-hero';
 import { HomeLabDeviceHero } from '../homelab-device-hero';
 import SectionDividerStatic from '../section-divider-static.astro';
 import PostLayout from '../post-layout.astro';
+import ContentImage from '../content-image.astro';
 
 interface Props {
   page: Page;
@@ -90,13 +91,13 @@ const slug = page.slug || page.flattenedPath;
           class="prose prose-lg prose-slate mx-auto max-w-none dark:prose-invert"
         >
           {page.hero === 'dev-env' ? (
-            <DevEnvDeviceHero client:load ariaLabel={dictionary.devices.devEnvAria} />
+            <DevEnvDeviceHero ariaLabel={dictionary.devices.devEnvAria} />
           ) : page.hero === 'homelab' ? (
-            <HomeLabDeviceHero client:load ariaLabel={dictionary.devices.homeLabAria} />
+            <HomeLabDeviceHero ariaLabel={dictionary.devices.homeLabAria} />
           ) : (
             page.feature_image && (
               <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
-                <img
+                <ContentImage
                   src={page.feature_image.replace('../assets', '/assets')}
                   alt={page.title}
                   width={1200}

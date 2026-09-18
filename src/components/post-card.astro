@@ -1,6 +1,7 @@
 ---
 import type { Post } from '@/lib/content';
 import { siteConfig } from '@/lib/config';
+import ContentImage from './content-image.astro';
 import { estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
 
 interface Props {
@@ -21,11 +22,12 @@ const cover =
   <div class="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-accent opacity-80 transition-transform duration-300 ease-out group-hover:scale-x-100"></div>
   {cover && (
     <div class="relative w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-      <img
+      <ContentImage
         src={cover}
         alt={post.title}
         width={640}
         height={360}
+        widths={[320, 640, 960]}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         loading="lazy"
         class="mx-auto w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"

@@ -4,6 +4,8 @@
 # Astro build output
 /dist
 /.astro
+/.wrangler
+/.playwright-cli
 
 # Production env files
 .env

@@ -26,6 +26,7 @@ const remarkRemoveRawHtml = () => (tree) => {
 export default defineConfig({
   // Canonical site URL; lib/config.ts may override per-env at render time.
   site: 'https://blog.gbanyan.net',
+  trailingSlash: 'never',
   i18n: {
     defaultLocale: 'zh-TW',
     locales: ['zh-TW', 'en'],

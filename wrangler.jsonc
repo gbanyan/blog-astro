@@ -1,15 +1,15 @@
 {
   // Static-assets-only Worker: no server code, Cloudflare serves ./dist directly.
   // Deploy: `npx wrangler deploy` (requires CLOUDFLARE_API_TOKEN or wrangler login).
-  // Custom domain cutover (blog.gbanyan.net) intentionally NOT configured here —
-  // add a `routes` entry only when switching off the Vercel project.
+  // Production route below preserves the Vercel DNS origin for rollback.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "blog-astro",
   "compatibility_date": "2026-09-01",
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    // Match existing canonical URLs and internal links without a redirect.
+    "html_handling": "drop-trailing-slash"
   },
   "routes": [
     // Edge route: requires the existing blog.gbanyan.net DNS record to be

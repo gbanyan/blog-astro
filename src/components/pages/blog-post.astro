@@ -11,6 +11,7 @@ import { countWords, estimateReadingMinutes, readingTimeLabel } from '@/lib/read
 import { socialImageUrl, documentOgUrl } from '@/lib/og';
 import PostStorylineNav from '../post-storyline-nav.astro';
 import PostCard from '../post-card.astro';
+import ContentImage from '../content-image.astro';
 import { MermaidRenderer } from '../mermaid-renderer';
 import { GiscusComments } from '../giscus-comments';
 import { FooterCue } from '../footer-cue';
@@ -159,7 +160,7 @@ const breadcrumbSchema = {
         >
           {post.feature_image && (
             <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
-              <img
+              <ContentImage
                 src={post.feature_image.replace('../assets', '/assets')}
                 alt={post.title}
                 width={1200}

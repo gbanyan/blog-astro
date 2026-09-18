@@ -37,6 +37,8 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       '.astro/**',
+      '.wrangler/**',
+      '.playwright-cli/**',
       'content/**',
       'public/**',
       '.superpowers/**',

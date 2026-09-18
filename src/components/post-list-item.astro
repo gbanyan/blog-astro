@@ -1,6 +1,7 @@
 ---
 import type { Post } from '@/lib/content';
 import { siteConfig } from '@/lib/config';
+import ContentImage from './content-image.astro';
 import { estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
 
 interface Props {
@@ -38,11 +39,12 @@ const readingVariant = variant === 'reading';
   )}
   {cover && (
     <div class="relative flex h-24 w-24 flex-none overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800 sm:h-auto sm:w-40">
-      <img
+      <ContentImage
         src={cover}
         alt={post.title}
         width={320}
         height={240}
+        widths={[96, 160, 192, 320]}
         sizes="(max-width: 640px) 96px, 160px"
         loading={priority ? 'eager' : 'lazy'}
         fetchpriority={priority ? 'high' : undefined}

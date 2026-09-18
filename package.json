@@ -21,6 +21,7 @@
     "check-assets": "node scripts/check-assets.mjs",
     "lint": "eslint .",
     "test": "vitest run",
+    "check-delivery": "node scripts/check-worker-delivery.mjs",
     "verify": "npm run build && npm run check-i18n && npm run lint && npm run test"
   },
   "dependencies": {
