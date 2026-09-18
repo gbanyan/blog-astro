@@ -60,6 +60,9 @@ export default defineConfig({
       name: 'Cormorant Garamond',
       cssVariable: '--font-display-latin',
       subsets: ['latin'],
+      // Source used next/font weight:'variable' (300 700 axis); without this
+      // Astro defaults to static 400 and headings synthesize bold.
+      weights: ['300 700'],
       display: 'swap',
     },
     {
