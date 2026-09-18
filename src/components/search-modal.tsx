@@ -58,48 +58,19 @@ function highlightPlain(text: string, query: string): string {
   return escaped.replace(re, '<mark>$1</mark>');
 }
 
-/**
- * Map Pagefind's filesystem URLs from Next.js `.next/server/app` HTML
- * onto App Router paths. Handles both the correct index root and a
- * legacy `/server/app/...` prefix from older `--site .next` builds.
- * (Task 11 removes this mapping once the Astro dist index is verified.)
- */
-function normalizePagefindUrl(url: string): string {
-  let path = url.split(/[?#]/)[0] || '/';
-
-  if (path.startsWith('/server/app')) {
-    path = path.slice('/server/app'.length) || '/';
-  }
-
-  if (path.endsWith('/index.html')) {
-    path = path.slice(0, -'/index.html'.length) || '/';
-  } else if (path.endsWith('.html')) {
-    path = path.slice(0, -'.html'.length);
-  }
-
-  return path.startsWith('/') ? path : `/${path}`;
-}
-
 function localizeInternalUrl(url: string, locale: SupportedLocale): string {
   if (!url.startsWith('/') || url.startsWith('//')) return url;
 
-  const normalized = normalizePagefindUrl(url);
-  const withoutDefaultPrefix =
-    normalized === '/zh-TW'
-      ? '/'
-      : normalized.startsWith('/zh-TW/')
-        ? normalized.slice('/zh-TW'.length)
-        : normalized;
   const withoutEnglishPrefix =
-    withoutDefaultPrefix === '/en'
+    url === '/en'
       ? '/'
-      : withoutDefaultPrefix.startsWith('/en/')
-        ? withoutDefaultPrefix.slice('/en'.length)
-        : withoutDefaultPrefix;
+      : url.startsWith('/en/')
+        ? url.slice('/en'.length)
+        : url;
 
   if (locale === 'en') {
-    return withoutDefaultPrefix === '/en' || withoutDefaultPrefix.startsWith('/en/')
-      ? withoutDefaultPrefix
+    return url === '/en' || url.startsWith('/en/')
+      ? url
       : withoutEnglishPrefix === '/'
         ? '/en'
         : `/en${withoutEnglishPrefix}`;
