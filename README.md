@@ -47,6 +47,14 @@ projects page's empty state.
 | `npm run check-i18n` | Locale-pairing validation over the loaded content via `scripts/i18n-validation-adapter.mjs` (routes + sitemap/feed/llms outputs). |
 | `npm run check-i18n-content` | Locale-pairing asserts on the generated collection records (source ↔ English ↔ placeholder counts). |
 
+Mermaid label checks run locally on macOS with the dev server (`npm run dev`)
+and Playwright (`npx --no-install playwright cli`). Check `/pages/homelab` and
+`/en/pages/homelab` at 390px and 1280px widths in light and dark themes: node
+and subgraph text must fit inside its SVG `foreignObject`, including multiline
+labels. Keep diagram typography isolated from article styles so resizing does
+not change text dimensions after Mermaid measures them. Run `npm run verify`
+for the production build, locale validation, lint, and unit tests.
+
 ## Architecture
 
 - **Astro 7, static output** (no SSR adapter). i18n routing:

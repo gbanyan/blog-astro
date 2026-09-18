@@ -209,7 +209,7 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
 
 function buildShell(labels: Dictionary['mermaid']): { wrapper: HTMLDivElement; viewport: HTMLDivElement } {
   const wrapper = document.createElement('div');
-  wrapper.className = 'mermaid-diagram';
+  wrapper.className = 'mermaid-diagram not-prose';
 
   const canvas = document.createElement('div');
   canvas.className = 'mermaid-canvas';
@@ -326,12 +326,15 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
       // code-split out of the island chunk (this island also hydrates on
       // pages with no diagrams). A static import would defeat that split.
       const mermaid = (await import('mermaid')).default;
+      // Label dimensions must be measured with the final font, before Mermaid
+      // fixes the SVG foreignObject sizes.
+      await document.fonts.ready;
       if (seq !== renderSeqRef.current) return;
 
       mermaid.initialize({
         startOnLoad: false,
         theme,
-        fontFamily: 'inherit',
+        fontFamily: getComputedStyle(entries[0].wrapper).fontFamily,
         // Stock mermaid-dark paints neutral grays (#1f2020 nodes, #474949
         // subgraphs) that hue-clash with the site's slate canvas (#0f172a).
         // Map the dark palette onto the same slate tokens the diagram chrome

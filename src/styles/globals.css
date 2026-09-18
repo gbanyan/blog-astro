@@ -2105,6 +2105,16 @@ body {
 }
 
 /* Mermaid diagram viewer */
+/* Mermaid measures HTML labels outside the article. Keep our custom prose
+   rules from enlarging them after insertion into fixed-size foreignObjects.
+   not-prose on the viewer also excludes Tailwind Typography's element rules. */
+.prose .mermaid-diagram p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
 .mermaid-diagram {
   position: relative;
   display: flex;
