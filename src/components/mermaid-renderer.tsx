@@ -157,23 +157,32 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
     apply();
   });
 
-  wrapper.querySelector('.mermaid-btn-fit')!.addEventListener('click', () => {
+  // Fit the diagram to the canvas: shrink until the whole diagram is visible.
+  // Shared by the toolbar button and the automatic initial fit.
+  const fit = () => {
     const svg = viewport.querySelector('svg');
     if (!svg) return;
     const canvasRect = canvas.getBoundingClientRect();
-    const svgW = svg.viewBox.baseVal.width || svg.getBoundingClientRect().width / state.scale;
-    const svgH = svg.viewBox.baseVal.height || svg.getBoundingClientRect().height / state.scale;
+    // mermaid's useMaxWidth clamps the SVG to the container width, so the
+    // viewBox is NOT the drawn size. Fit against the SVG's actual layout
+    // size — the rect includes the active transform, divide it out.
+    const rect = svg.getBoundingClientRect();
+    const natW = rect.width / state.scale;
+    const natH = rect.height / state.scale;
+    if (!natW || !natH) return;
     const padding = 32;
     const fitScale = Math.min(
-      (canvasRect.width - padding) / svgW,
-      (canvasRect.height - padding) / svgH,
+      (canvasRect.width - padding) / natW,
+      (canvasRect.height - padding) / natH,
       ZOOM_MAX
     );
     state.scale = clampScale(fitScale);
     state.x = 0;
     state.y = 0;
     apply();
-  });
+  };
+
+  wrapper.querySelector('.mermaid-btn-fit')!.addEventListener('click', fit);
 
   wrapper.querySelector('.mermaid-btn-fullscreen')!.addEventListener('click', () => {
     if (document.fullscreenElement === wrapper) {
@@ -184,7 +193,7 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
   });
 
   // Cleanup
-  return () => {
+  const cleanup = () => {
     canvas.removeEventListener('mousedown', onMouseDown);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
@@ -192,7 +201,10 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
     canvas.removeEventListener('touchstart', onTouchStart);
     canvas.removeEventListener('touchmove', onTouchMove);
     canvas.removeEventListener('touchend', onTouchEnd);
+    wrapper.querySelector('.mermaid-btn-fit')!.removeEventListener('click', fit);
   };
+
+  return { cleanup, fit };
 }
 
 function buildShell(labels: Dictionary['mermaid']): { wrapper: HTMLDivElement; viewport: HTMLDivElement } {
@@ -250,7 +262,7 @@ function buildShell(labels: Dictionary['mermaid']): { wrapper: HTMLDivElement; v
 
 export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
   const { resolvedTheme } = useTheme();
-  const containersRef = useRef<{ viewport: HTMLDivElement; wrapper: HTMLDivElement; source: string }[]>([]);
+  const containersRef = useRef<{ viewport: HTMLDivElement; wrapper: HTMLDivElement; source: string; fit: () => void }[]>([]);
   const cleanupRef = useRef<(() => void)[]>([]);
   const renderSeqRef = useRef(0);
   const lastThemeRef = useRef<'dark' | 'default' | null>(null);
@@ -277,8 +289,9 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
 
       const { wrapper, viewport } = buildShell(labels);
       figure.replaceWith(wrapper);
-      entries.push({ viewport, wrapper, source });
-      cleanupRef.current.push(attachViewer(wrapper, viewport));
+      const viewer = attachViewer(wrapper, viewport);
+      entries.push({ viewport, wrapper, source, fit: viewer.fit });
+      cleanupRef.current.push(viewer.cleanup);
     });
 
     containersRef.current = entries;
@@ -342,7 +355,7 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
             : undefined,
       });
 
-      for (const { viewport, wrapper, source } of entries) {
+      for (const { viewport, wrapper, source, fit } of entries) {
         if (seq !== renderSeqRef.current) return;
         const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
         try {
@@ -350,6 +363,10 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
           if (seq !== renderSeqRef.current) return;
           viewport.innerHTML = svg;
           wrapper.classList.add('mermaid-rendered');
+          // Auto-fit: long node/subgraph titles make diagrams wider than the
+          // canvas, and the SVG's width-fit then crops the overflow
+          // (overflow: hidden). Fit the whole viewBox instead of cropping.
+          fit();
         } catch {
           if (seq !== renderSeqRef.current) return;
           viewport.textContent = source;
