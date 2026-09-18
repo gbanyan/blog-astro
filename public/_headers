@@ -1,0 +1,9 @@
+# Cloudflare static-asset cache rules (served by the blog-astro Worker).
+/og/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_pagefind/*
+  Cache-Control: public, max-age=31536000, immutable
