@@ -59,9 +59,12 @@ jobs:
         run: npm ci
 
       # Build-time PUBLIC_* config (site name, accents, socials). Stored as a
-      # single secret to keep values out of the public repo.
+      # single secret to keep values out of the public repo. Passed through
+      # the step env (not inline ${{ }}) to avoid shell-expansion breakage.
       - name: Restore build-time env
-        run: echo "${{ secrets.BLOG_ENV_FILE }}" > .env.local
+        env:
+          BLOG_ENV_FILE: ${{ secrets.BLOG_ENV_FILE }}
+        run: printf '%s\n' "$BLOG_ENV_FILE" > .env.local
 
       - name: Build (astro + pagefind)
         run: npm run build
