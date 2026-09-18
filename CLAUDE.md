@@ -73,11 +73,40 @@ The `content/` directory is a git submodule pointing to a separate `personal-blo
 
 ## Deployment
 
-**Deployment is NOT yet configured for this repository.** It is Gitea-only for now (`git.gbanyan.net`); the GitHub remote and deployment pipeline are a separate follow-up. The source of record for the live site remains `blog-nextjs` (GitHub remote, `main` push triggers the pipeline).
+**Live on Cloudflare Workers** (cutover 2026-09-18). `blog.gbanyan.net` is
+served by the static-assets Worker `blog-astro` via an edge route
+(`blog.gbanyan.net/*`, zone `gbanyan.net`, DNS record Proxied). Rollback =
+delete the route in the CF dashboard (or remove it from `wrangler.jsonc` and
+redeploy); traffic returns to the Vercel origin instantly — the Vercel project
+is retained as the rollback origin.
 
-When deployment IS configured for this repo, the content-publishing contract is the same two-step flow as the source repo (both steps required to trigger a deploy):
-1. Commit and push inside `content/` submodule: `git -C content add . && git -C content commit -m "..." && git -C content push`
-2. Update main repo submodule pointer and push: `git add content && git commit -m "Update content submodule" && git push`
+- **Code remotes**: `origin` = Gitea (`git.gbanyan.net`), `github` =
+  `gbanyan/blog-astro` (public). Push both.
+- **CI**: `.github/workflows/deploy.yml` (GitHub Actions) — push to `main`,
+  hourly schedule, and `workflow_dispatch`. Submodule fetch is rewritten to
+  the public mirror `https://github.com/gbanyan/personal-blog.git` (insteadOf),
+  build-time `PUBLIC_*` config comes from the `BLOG_ENV_FILE` secret (full
+  `.env.local` body), deploy uses the `CLOUDFLARE_API_TOKEN` secret.
+- **Local credentials**: CF API token at `~/.config/cloudflare/token`
+  (Workers-edit scope; also used as the `cloudflare-api` MCP entry in
+  `~/.omp/agent/mcp.json`).
+
+### Content publishing (single push)
+
+```bash
+cd content && git add . && git commit -m "..." && git push
+```
+
+`content`'s `origin` has dual push URLs (Gitea + GitHub mirror) — one push
+syncs both. The hourly CI schedule picks up new content (fast-forwards the
+submodule, commits the pointer bump, deploys); push-to-`main` and
+`workflow_dispatch` trigger an instant deploy.
+
+### Comments
+
+giscus → GitHub Discussions in `gbanyan/blog-comments` (Announcements,
+mapping `pathname`). Values live in `.env.local` / `BLOG_ENV_FILE`; the
+[giscus app](https://github.com/apps/giscus) must stay installed on that repo.
 
 **Code changes**: commit and push in the main repo as usual.
 

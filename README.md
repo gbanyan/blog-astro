@@ -101,21 +101,56 @@ The full content contract (frontmatter fields, translation pairing, placeholder
 semantics, slug rules) is specified in
 [`docs/superpowers/specs/2026-09-18-astro-migration-design.md`](docs/superpowers/specs/2026-09-18-astro-migration-design.md).
 
-## Content updates
+## Content updates & deployment (fully automated)
 
-`content/` is a git submodule pointing at the separate `personal-blog`
-repository. Publishing new/edited posts requires **both** steps (identical to
-the source repo's contract):
+`content/` is a git submodule pointing at `personal-blog` (Gitea origin, with a
+**public GitHub mirror** at [`gbanyan/personal-blog`](https://github.com/gbanyan/personal-blog)
+that CI fetches without credentials).
 
-1. Commit and push inside `content/`:
-   `git -C content add . && git -C content commit -m "..." && git -C content push`
-2. Update the main repo's submodule pointer and push:
-   `git add content && git commit -m "Update content submodule" && git push`
+**Publishing a post is a single push:**
 
-> **Deployment is not yet configured for this repository** (Gitea-only for
-> now; the GitHub remote + deployment pipeline are a separate follow-up). The
-> two-step push contract above is documented so the workflow is ready the day
-> deployment is wired up.
+```bash
+cd content && git add . && git commit -m "新文章" && git push
+```
+
+`origin` is configured with **dual push URLs** (Gitea + GitHub mirror), so one
+`git push` syncs both. From there:
+
+1. **push-triggered deploy** — `.github/workflows/deploy.yml` in this repo runs
+   on `main` pushes: checkout (submodule via the public mirror, zero
+   credentials) → restore build-time env from the `BLOG_ENV_FILE` secret →
+   `npm run build` (astro + pagefind) → `npx wrangler deploy`.
+2. **hourly catch-up** — the workflow also runs on an hourly schedule; if the
+   GitHub mirror's `main` is ahead of the pinned submodule pointer, it
+   fast-forwards, commits the pointer bump (bot commit), and deploys. So even
+   the pointer-bump step is automated; a manual `workflow_dispatch` gives an
+   instant deploy.
+
+### Hosting (Cloudflare Workers)
+
+- Static-assets-only Worker (`wrangler.jsonc`): `dist/` served at the edge,
+  real 404s via `not_found_handling: "404-page"`, cache rules in `public/_headers`
+  (`/og/*`, `/assets/*`, `/_pagefind/*` → immutable).
+- Traffic attaches through an **edge route** (`blog.gbanyan.net/*` on zone
+  `gbanyan.net`) with the DNS record **Proxied**. The old Vercel project is
+  kept as the route-less origin — **rollback = delete the route and redeploy**
+  (traffic returns to Vercel instantly; no DNS change).
+- Deploy creds: `CLOUDFLARE_API_TOKEN` GitHub secret (template *"Edit
+  Cloudflare Workers"*). Build-time `PUBLIC_*` config travels via the
+  `BLOG_ENV_FILE` secret (full `.env.local` body; restored to `.env.local`
+  before the build).
+
+### Comments (giscus)
+
+Comments are GitHub Discussions in the dedicated public repo
+[`gbanyan/blog-comments`](https://github.com/gbanyan/blog-comments)
+(`Announcements` category, mapping = `pathname`, so threads bind to page URLs
+and survive code-repo changes). The `PUBLIC_GISCUS_*` values are in
+`.env.local` / `BLOG_ENV_FILE`. Prerequisite that lives outside the repo: the
+[giscus GitHub App](https://github.com/apps/giscus) must be installed on
+`blog-comments` (otherwise the widget errors on submit). The Next.js site
+never had working comments (no giscus env on Vercel) — this is a new feature,
+not a migration delta.
 
 ## Environment variables
 
@@ -144,4 +179,6 @@ Accepted differences from the Next.js source (details in the design spec):
    all (fallback defaults for every `PUBLIC_*` read; empty projects list).
 4. **Markdown images as-is** — served straight from `/assets/*` (no runtime
    AVIF/WebP re-encoding; pre-optimization in `sync-assets` is a follow-up).
-5. **Deployment not configured** — Gitea-only repository for now.
+5. **Deployment** — Cloudflare Workers (edge route + static assets) with
+   GitHub Actions CI, replacing Vercel + the Next.js runtime entirely. The
+   Vercel project is retained solely as a rollback origin.
