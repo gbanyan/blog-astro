@@ -68,7 +68,8 @@ export function rehypeOptimizeImages() {
 
       node.properties.loading = 'lazy';
       node.properties.decoding = 'async';
-      // Hint used by MarkdownBody → next/image sizes
+      // `sizes` on the plain <img>: inert without srcset today, kept so the
+      // markup is ready if image optimization (srcset) is added later.
       if (!node.properties.sizes) {
         node.properties.sizes =
           '(max-width: 768px) 100vw, (max-width: 1200px) 800px, 800px';

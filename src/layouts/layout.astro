@@ -69,8 +69,8 @@ const organizationSchema = {
 
 // Root layout (source `app/[locale]/layout.tsx`) always emits robots with the
 // Google directives plus creator/RSS tags; a page-level `head.robots` fully
-// replaces them (Next.js merge semantics — the deployed 404 emits only
-// `noindex, follow` with no googlebot meta).
+// replaces them (Next.js merge semantics — the deployed 404 emits a bare
+// `noindex` meta with no googlebot meta).
 const rssUrl = absoluteUrl(localizedPath('/feed.xml', locale));
 const ROOT_GOOGLEBOT = 'index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1';
 const pageRobotsContent = head.robots

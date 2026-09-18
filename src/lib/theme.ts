@@ -34,10 +34,14 @@ export function applyTheme(preference: ThemePreference): ResolvedTheme {
 /**
  * Inline script for the layout <head>: applies the stored/system theme
  * before first paint (class strategy, same contract as next-themes
- * attribute="class" defaultTheme="system" enableSystem).
+ * attribute="class" defaultTheme="system" enableSystem), and re-applies it
+ * on every ClientRouter navigation — Astro's swap replaces the <html>
+ * element's attributes, wiping the runtime `dark` class/data-theme, so
+ * without the `astro:after-swap` re-apply every internal navigation would
+ * flash light mode before islands hydrate.
  */
 export const THEME_INIT_SNIPPET = `<script>
-(function(){try{var k='${STORAGE_KEY}';var v=localStorage.getItem(k);if(v!=='light'&&v!=='dark')v=null;var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=v??(d?'dark':'light');document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t;}catch(e){}})();
+(function(){function apply(){try{var k='theme';var v=localStorage.getItem(k);if(v!=='light'&&v!=='dark')v=null;var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=v??(d?'dark':'light');document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.dataset.theme=t;}catch(e){}}apply();document.addEventListener('astro:after-swap',apply);})();
 </script>`;
 
 /**

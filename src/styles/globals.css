@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-/* Class-based dark mode for next-themes */
+/* Class-based dark mode (hand-rolled theming, class strategy) */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Auto-detect content in the submodule (stylesheet lives in src/styles/) */
@@ -1988,6 +1988,13 @@ body {
 .prose [data-rehype-pretty-code-title] + pre {
   @apply mt-0 rounded-t-none;
 }
+
+/* Shiki dual-theme tokens. astro.config.mjs sets `defaultColor: false`, so
+   Shiki emits --shiki-light/--shiki-dark (plus -bg/-font-style/-font-weight)
+   as inline vars on the .astro-code element; spans inherit them. Both var
+   sets are always present on code blocks, so no fallbacks are needed. */
+.astro-code, .astro-code span { color: var(--shiki-light); background-color: var(--shiki-light-bg); font-style: var(--shiki-light-font-style); font-weight: var(--shiki-light-font-weight); }
+.dark .astro-code, .dark .astro-code span { color: var(--shiki-dark); background-color: var(--shiki-dark-bg); font-style: var(--shiki-dark-font-style); font-weight: var(--shiki-dark-font-weight); }
 
 /* GitHub-style Callouts/Alerts */
 .prose .callout {

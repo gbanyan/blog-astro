@@ -67,7 +67,10 @@ export default defineConfig({
       name: 'LXGW WenKai TC',
       cssVariable: '--font-display-cjk',
       weights: [400, 700],
-      display: 'swap', // CJK: no preload in Astro 7 fonts API; verify emitted links
+      // CJK: Astro 7's fonts API self-hosts woff2 under /_astro/fonts/ and
+      // emits an inline @font-face <style> in <head> — no preload <link> is
+      // emitted at all (verified against dist output).
+      display: 'swap',
     },
   ],
 });

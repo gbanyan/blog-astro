@@ -57,7 +57,6 @@ export interface HeadModel {
     description?: string;
     images: string[];
   };
-  sitemap: SitemapEntry[];
 }
 
 /** Structural stand-in for Next's `MetadataRoute.Sitemap` record. */
@@ -171,7 +170,6 @@ export function metadataForDocument(
     robots: isPlaceholderDocument(document)
       ? { index: false, follow: true }
       : { index: true, follow: true },
-    sitemap: localizedSitemapEntries(locale),
   };
 }
 
@@ -217,7 +215,6 @@ export function metadataForPath({
       description,
       images: [siteConfig.ogImage],
     },
-    sitemap: localizedSitemapEntries(locale),
   };
 }
 

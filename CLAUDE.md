@@ -50,7 +50,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Rehype: callouts → built-in Shiki dual theme (`github-light` / `github-dark`, `defaultColor: false`, replacing rehype-pretty-code) → slug → autolink-headings → image optimizer → link localizer
   - `src/lib/rehype-optimize-images.ts` rewrites `../assets/` → `/assets/` and attaches intrinsic width/height + `loading=lazy` + `sizes`
   - `src/lib/rehype-localize-links.ts` prefixes `/en` to internal routes in English-source documents
-- Built HTML is rendered verbatim by Astro (no runtime re-parse); Shiki CSS selectors are `.astro-code` (see `src/styles/globals.css`)
+- Built HTML is rendered verbatim by Astro (no runtime re-parse); Shiki output is `.astro-code` — the `--shiki-light`/`--shiki-dark` dual-theme var wiring lives in `src/styles/globals.css`
 - smartypants is OFF — the rendered-output contract stays byte-comparable with the source site
 
 ## Styling

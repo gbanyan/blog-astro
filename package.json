@@ -11,6 +11,7 @@
     "safari 16.4"
   ],
   "scripts": {
+    "predev": "npm run sync-assets",
     "dev": "astro dev",
     "build": "npm run sync-assets && npm run check-i18n-content && npm run check-assets && astro build && npx pagefind --site dist --output-path dist/_pagefind",
     "preview": "astro preview",
