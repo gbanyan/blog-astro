@@ -1,0 +1,66 @@
+# Deploys the blog to Cloudflare Workers.
+#
+# Triggers:
+#  - push to main (code or submodule pointer bump)
+#  - hourly: picks up new content pushed to the personal-blog GitHub mirror
+#    (drift is committed back as a pointer bump so builds stay reproducible)
+#  - manual (workflow_dispatch) for instant deploys
+#
+# Secret required: CLOUDFLARE_API_TOKEN (template: "Edit Cloudflare Workers").
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # The submodule's fetch URL is Gitea SSH (local dev convention); on CI,
+      # rewrite it to the public GitHub mirror so no credentials are needed.
+      - name: Redirect submodule fetch to public GitHub mirror
+        run: |
+          git config --global url."https://github.com/gbanyan/personal-blog.git".insteadOf "ssh://git@git.gbanyan.net:30009/personal/personal-blog.git"
+          git submodule sync
+          git -C content fetch origin main
+
+      # Hourly/manual runs build the LATEST content; the pointer bump is
+      # committed back so push-triggered builds stay reproducible.
+      - name: Fast-forward submodule to latest content
+        run: |
+          git -C content checkout FETCH_HEAD
+          if [ -n "$(git status --porcelain content)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add content
+            git commit -m "chore: sync content submodule to $(git -C content rev-parse --short HEAD)"
+            git push origin main
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (astro + pagefind)
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
