@@ -34,6 +34,17 @@ function enclosureFor(featureImage?: string): string {
   return `<enclosure url="${escapeXml(url)}" length="${length}" type="${type}"/>`;
 }
 
+/**
+ * The source llms.txt prints `published_at` as-emitted — Velite emits an
+ * ISO string. The ported adapter mirrors `z.coerce.date()` and hands a
+ * `Date` instead, so normalize to the same ISO string; plain string
+ * values pass through untouched.
+ */
+function publishedValue(value?: Date | string): string {
+  if (!value) return 'Unknown';
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
 
 export function generateRss(locale: Locale): string {
   const dictionary = getDictionary(locale);
@@ -137,7 +148,7 @@ ${posts
     return `### ${post.title}
 
 - **URL**: ${url}
-- **Published**: ${post.published_at || 'Unknown'}
+- **Published**: ${publishedValue(post.published_at)}
 ${description ? `- **Summary**: ${description}` : ''}
 ${post.tags && post.tags.length > 0 ? `- **Tags**: ${post.tags.join(', ')}` : ''}
 ${translationLinks.length > 0 ? `- **Translations**: ${translationLinks.join(' · ')}` : ''}
