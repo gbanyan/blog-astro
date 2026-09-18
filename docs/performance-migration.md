@@ -68,9 +68,38 @@ not field Core Web Vitals, an INP assessment, or a Lighthouse score. Remaining
 opportunities include inline Markdown images, React list thumbnails, and
 reducing the first-visit CJK font subset payload without changing typography.
 
+## Cloudflare follow-up audit
+
+The documentation MCP connected on September 18, 2026. Account MCP servers
+still reported `not_logged_in`; Wrangler's existing OAuth credential could
+read Worker settings and routes, but zone settings, rulesets, and DNS reads
+returned HTTP 403. No zone-wide configuration was changed.
+
+- Verified the production route points to `blog-astro`, with fail-open disabled.
+- Verified workers.dev and preview URLs are disabled in the live account.
+- Production HTML was served over HTTP/2 with Brotli compression and advertised
+  HTTP/3 via `Alt-Svc`. These observations do not establish all zone settings.
+- Refined search caching: content-hashed `/_pagefind/index/*` and
+  `/_pagefind/fragment/*` now receive immutable caching; entry JS/JSON and WASM
+  retain Cloudflare's default ETag revalidation. Removed the blanket Pagefind
+  rule to avoid conflicting Cache-Control values from overlapping patterns.
+- The current build has 12 index chunks (347,771 bytes) and 112 result fragments
+  (337,611 bytes). A search loads only the subset it needs; caching avoids
+  repeat network validation for those unchanged payloads, not this entire
+  bundle on every search.
+- Delivery checks now verify hashed search payload headers and entry freshness.
+  They use filenames from the local build, so production checks should run
+  against the matching deployed build.
+- A local Chrome repeat-visit check for the English `Cloudflare` query loaded
+  one index and one result fragment: 36,931 transferred bytes on the first
+  visit, zero on the second. Both searches returned the same result. The test
+  disabled Pagefind's worker only in the browser evaluation so Resource Timing
+  could observe its requests; production's worker setting is unchanged.
+
 ## References
 
 - [Cloudflare static asset headers](https://developers.cloudflare.com/workers/static-assets/headers/)
 - [Cloudflare HTML handling](https://developers.cloudflare.com/workers/static-assets/routing/advanced/html-handling/)
 - [Astro image optimization](https://docs.astro.build/en/guides/images/)
 - [Astro dynamic image imports](https://docs.astro.build/en/recipes/dynamically-importing-images/)
+- [Pagefind metadata freshness and index caching](https://pagefind.app/docs/search-config/#meta-cache-tag)

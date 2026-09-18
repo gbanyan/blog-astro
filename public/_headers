@@ -9,5 +9,10 @@
 /assets/*
   Cache-Control: public, max-age=0, must-revalidate
 
-/_pagefind/*
-  Cache-Control: public, max-age=0, must-revalidate
+# Pagefind entry JS/JSON and WASM retain the default revalidation policy.
+# Only these content-hashed search payloads can safely persist across builds.
+/_pagefind/index/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_pagefind/fragment/*
+  Cache-Control: public, max-age=31536000, immutable

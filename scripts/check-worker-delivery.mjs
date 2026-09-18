@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readdir } from 'node:fs/promises';
 
 // Run against `wrangler dev`, or pass the production origin after deployment.
 const origin = process.argv[2] ?? 'http://127.0.0.1:4413';
@@ -35,10 +36,21 @@ for (const path of [font, image]) {
   assert.ok(response.headers.get('etag'), `${path} needs an ETag`);
   await response.arrayBuffer();
 }
-for (const path of ['/assets/ai-taste-llm-data-shadow.jpg', '/_pagefind/pagefind.js', '/og/index/en.png']) {
+for (const path of ['/assets/ai-taste-llm-data-shadow.jpg', '/_pagefind/pagefind.js', '/_pagefind/pagefind-entry.json', '/_pagefind/wasm.en.pagefind', '/og/index/en.png']) {
   const response = await request(path);
   assert.equal(response.status, 200, path);
   assert.equal(response.headers.get('cache-control'), revalidate, path);
+  await response.arrayBuffer();
+}
+for (const [directory, extension] of [['index', 'pf_index'], ['fragment', 'pf_fragment']]) {
+  const files = await readdir(new URL(`../dist/_pagefind/${directory}/`, import.meta.url));
+  assert.ok(files.length > 0, `missing built Pagefind ${directory}`);
+  assert.ok(files.every((file) => new RegExp(`^[a-z-]+_[a-f0-9]+\\.${extension}$`).test(file)),
+    `Pagefind ${directory} must only contain fingerprinted payloads`);
+  const path = `/_pagefind/${directory}/${files.sort()[0]}`;
+  const response = await request(path);
+  assert.equal(response.status, 200, path);
+  assert.equal(response.headers.get('cache-control'), immutable, path);
   await response.arrayBuffer();
 }
 for (const path of ['/delivery-check-does-not-exist', '/_astro/delivery-check-does-not-exist.js']) {

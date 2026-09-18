@@ -149,8 +149,9 @@ cd content && git add . && git commit -m "新文章" && git push
   the site's canonical URLs without redirecting every internal navigation.
 - Cache rules in `public/_headers`: hashed `/_astro/*` files (fonts, JS, CSS,
   optimized images) are immutable for one year. HTML, original `/assets/*`,
-  `/og/*`, and `/_pagefind/*` revalidate with ETags because their URLs can be
-  reused after a content update.
+  `/og/*`, and Pagefind entry JS/JSON/WASM revalidate with ETags because their
+  URLs can be reused after a content update. Content-hashed Pagefind `index/`
+  and `fragment/` payloads are immutable for one year.
 - Cover images and static card/list thumbnails use Astro's build-time WebP
   variants with `srcset`. Source dimensions reserve the correct aspect ratio.
   No runtime image service or paid Cloudflare image transformations are needed.
