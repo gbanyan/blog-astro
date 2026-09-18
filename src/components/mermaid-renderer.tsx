@@ -344,14 +344,16 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
             ? {
                 background: 'transparent',
                 primaryColor: '#1e293b',
-                primaryBorderColor: '#475569',
+                primaryBorderColor: '#64748b',
                 // Flowchart nodes read mainBkg/nodeBorder, not primaryColor.
                 mainBkg: '#1e293b',
-                nodeBorder: '#475569',
+                nodeBorder: '#64748b',
                 primaryTextColor: '#e2e8f0',
                 lineColor: '#94a3b8',
                 clusterBkg: '#0f172a',
-                clusterBorder: '#334155',
+                // Group outlines need to stay visible when the viewer scales
+                // down the diagram's thin strokes to fit the canvas.
+                clusterBorder: '#94a3b8',
                 textColor: '#e2e8f0',
                 titleColor: '#e2e8f0',
               }
