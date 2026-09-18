@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTheme } from '@/lib/theme';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
@@ -252,37 +252,15 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
   const { resolvedTheme } = useTheme();
   const containersRef = useRef<{ viewport: HTMLDivElement; wrapper: HTMLDivElement; source: string }[]>([]);
   const cleanupRef = useRef<(() => void)[]>([]);
+  const renderSeqRef = useRef(0);
+  const lastThemeRef = useRef<'dark' | 'default' | null>(null);
 
-  const renderDiagrams = useCallback(async () => {
-    if (containersRef.current.length === 0) return;
-
-    // Clean up previous event listeners
-    cleanupRef.current.forEach((fn) => fn());
-    cleanupRef.current = [];
-
-    const mermaid = (await import('mermaid')).default;
-    const theme = resolvedTheme === 'dark' ? 'dark' : 'default';
-
-    mermaid.initialize({
-      startOnLoad: false,
-      theme,
-      fontFamily: 'inherit',
-    });
-
-    for (const { viewport, wrapper, source } of containersRef.current) {
-      const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
-      try {
-        const { svg } = await mermaid.render(id, source);
-        viewport.innerHTML = svg;
-        wrapper.classList.add('mermaid-rendered');
-        const cleanup = attachViewer(wrapper, viewport);
-        cleanupRef.current.push(cleanup);
-      } catch {
-        viewport.textContent = source;
-      }
-    }
-  }, [resolvedTheme]);
-
+  // Build the viewer shells once per mount. The figures are replaced by the
+  // shells here, so this effect must NOT re-run on theme changes: a re-run
+  // would find no figures and orphan the already-built shells (and an
+  // in-flight first render would then loop over an empty list, leaving the
+  // viewport empty). The zoom viewer is attached once per shell; a theme
+  // re-render only swaps the SVG inside the persistent viewport.
   useEffect(() => {
     const figures = document.querySelectorAll<HTMLElement>(
       'pre.astro-code[data-language="mermaid"]'
@@ -300,16 +278,88 @@ export function MermaidRenderer({ labels }: { labels: Dictionary['mermaid'] }) {
       const { wrapper, viewport } = buildShell(labels);
       figure.replaceWith(wrapper);
       entries.push({ viewport, wrapper, source });
+      cleanupRef.current.push(attachViewer(wrapper, viewport));
     });
 
     containersRef.current = entries;
-    renderDiagrams();
 
     return () => {
       cleanupRef.current.forEach((fn) => fn());
       cleanupRef.current = [];
+      containersRef.current = [];
+      renderSeqRef.current += 1; // abort any in-flight render
     };
-  }, [renderDiagrams, labels]);
+  }, [labels]);
+
+  // Render on mount and re-render when the resolved theme flips. On the
+  // first pass `resolvedTheme` is still undefined (useTheme syncs from the
+  // document in its own post-mount effect), so fall back to the <html> class
+  // — the init snippet guarantees it is already correct pre-paint.
+  useEffect(() => {
+    const entries = containersRef.current;
+    if (entries.length === 0) return;
+
+    const dark =
+      resolvedTheme ??
+      (document.documentElement.classList.contains('dark') ? ('dark' as const) : ('light' as const));
+    const theme = dark === 'dark' ? 'dark' : 'default';
+    if (lastThemeRef.current === theme) return;
+
+    const seq = ++renderSeqRef.current;
+    lastThemeRef.current = theme;
+
+    (async () => {
+      // Dynamic import on purpose: mermaid is a ~1 MB bundle that must stay
+      // code-split out of the island chunk (this island also hydrates on
+      // pages with no diagrams). A static import would defeat that split.
+      const mermaid = (await import('mermaid')).default;
+      if (seq !== renderSeqRef.current) return;
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme,
+        fontFamily: 'inherit',
+        // Stock mermaid-dark paints neutral grays (#1f2020 nodes, #474949
+        // subgraphs) that hue-clash with the site's slate canvas (#0f172a).
+        // Map the dark palette onto the same slate tokens the diagram chrome
+        // in globals.css uses; light keeps the stock default theme.
+        themeVariables:
+          theme === 'dark'
+            ? {
+                background: 'transparent',
+                primaryColor: '#1e293b',
+                primaryBorderColor: '#475569',
+                // Flowchart nodes read mainBkg/nodeBorder, not primaryColor.
+                mainBkg: '#1e293b',
+                nodeBorder: '#475569',
+                primaryTextColor: '#e2e8f0',
+                lineColor: '#94a3b8',
+                clusterBkg: '#0f172a',
+                clusterBorder: '#334155',
+                textColor: '#e2e8f0',
+                titleColor: '#e2e8f0',
+              }
+            : undefined,
+      });
+
+      for (const { viewport, wrapper, source } of entries) {
+        if (seq !== renderSeqRef.current) return;
+        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+        try {
+          const { svg } = await mermaid.render(id, source);
+          if (seq !== renderSeqRef.current) return;
+          viewport.innerHTML = svg;
+          wrapper.classList.add('mermaid-rendered');
+        } catch {
+          if (seq !== renderSeqRef.current) return;
+          viewport.textContent = source;
+        }
+      }
+    })().catch(() => {
+      // Module load failure: allow a later theme flip to retry.
+      if (seq === renderSeqRef.current) lastThemeRef.current = null;
+    });
+  }, [resolvedTheme]);
 
   return null;
 }
