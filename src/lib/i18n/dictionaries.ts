@@ -20,8 +20,10 @@ export type Dictionary = {
   language: {
     english: string;
     traditionalChinese: string;
-    switchTo: (language: string) => string;
-    fallback: (language: string) => string;
+    /** `{lang}` placeholder templates — React island props are JSON-serialized,
+     * so these must stay strings (functions would be dropped client-side). */
+    switchTo: string;
+    fallback: string;
   };
   common: {
     allPosts: string;
@@ -154,8 +156,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     language: {
       english: '英文',
       traditionalChinese: '繁中',
-      switchTo: (language) => `切換至${language}`,
-      fallback: (language) => `沒有對應翻譯，前往${language}區段首頁`,
+      switchTo: '切換至{lang}',
+      fallback: '沒有對應翻譯，前往{lang}區段首頁',
     },
     devices: {
       devEnvAria: 'Mac mini、鍵盤與外接螢幕的 3D 裝置展示',
@@ -275,8 +277,8 @@ const dictionaries: Record<Locale, Dictionary> = {
     language: {
       english: 'English',
       traditionalChinese: 'Traditional Chinese',
-      switchTo: (language) => `Switch to ${language}`,
-      fallback: (language) => `No translated page; open the ${language} section index`,
+      switchTo: 'Switch to {lang}',
+      fallback: 'No translated page; open the {lang} section index',
     },
     devices: {
       devEnvAria: '3D showcase of a Mac mini, keyboard, and external display',

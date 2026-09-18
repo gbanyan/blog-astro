@@ -28,8 +28,8 @@ export function LanguageSwitcher({ manifest, currentPath, labels }: LanguageSwit
   const targetLocale = currentLocale === DEFAULT_LOCALE ? ENGLISH_LOCALE : DEFAULT_LOCALE;
   const target = resolveLocaleSwitchTarget(currentPath, targetLocale, manifest);
   const targetLabel = targetLocale === ENGLISH_LOCALE ? labels.english : labels.traditionalChinese;
-  const fallbackHint = target.isFallback ? ` (${labels.fallback(targetLabel)})` : '';
-  const switchLabel = `${labels.switchTo(targetLabel)} (${LOCALE_LABELS[targetLocale]})${fallbackHint}`;
+  const fallbackHint = target.isFallback ? ` (${labels.fallback.replace('{lang}', targetLabel)})` : '';
+  const switchLabel = `${labels.switchTo.replace('{lang}', targetLabel)} (${LOCALE_LABELS[targetLocale]})${fallbackHint}`;
 
   return (
     <a

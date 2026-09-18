@@ -63,6 +63,12 @@ export default defineConfig({
       // Source used next/font weight:'variable' (300 700 axis); without this
       // Astro defaults to static 400 and headings synthesize bold.
       weights: ['300 700'],
+      // Astro appends its `fallbacks` (default ["sans-serif"]) to the CSS
+      // variable; globals.css composes latin-var BEFORE cjk-var, so a generic
+      // mid-list satisfies CJK glyphs from the system font and the CJK family
+      // never loads (next/font's variable has no generic tail).
+      fallbacks: [],
+      optimizedFallbacks: false,
       display: 'swap',
     },
     {
@@ -70,6 +76,8 @@ export default defineConfig({
       name: 'LXGW WenKai TC',
       cssVariable: '--font-display-cjk',
       weights: [400, 700],
+      fallbacks: [],
+      optimizedFallbacks: false,
       // CJK: Astro 7's fonts API self-hosts woff2 under /_astro/fonts/ and
       // emits an inline @font-face <style> in <head> — no preload <link> is
       // emitted at all (verified against dist output).
