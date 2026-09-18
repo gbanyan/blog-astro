@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useMounted } from '@/lib/use-mounted';
 
 function supportsScrollDrivenAnimations(): boolean {
   if (typeof CSS === 'undefined') return false;
@@ -10,7 +9,7 @@ function supportsScrollDrivenAnimations(): boolean {
 }
 
 export function ReadingProgress() {
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [useScrollDriven, setUseScrollDriven] = useState(false);
 

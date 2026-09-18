@@ -27,7 +27,6 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
 
   // --- Pinch state ---
   let lastPinchDist = 0;
-  let lastPinchCenter = { x: 0, y: 0 };
   let pinching = false;
 
   const levelBtn = wrapper.querySelector<HTMLButtonElement>('.mermaid-zoom-level')!;
@@ -42,7 +41,6 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
 
   const zoomTo = (newScale: number, cx: number, cy: number) => {
     const clamped = clampScale(newScale);
-    const rect = viewport.getBoundingClientRect();
     const wrapRect = wrapper.querySelector<HTMLElement>('.mermaid-canvas')!.getBoundingClientRect();
 
     // Point under cursor in viewport-local coords
@@ -103,7 +101,6 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
     if (e.touches.length === 2) {
       pinching = true;
       lastPinchDist = pinchDist(e.touches);
-      lastPinchCenter = pinchCenter(e.touches);
       e.preventDefault();
     } else if (e.touches.length === 1) {
       dragging = true;
@@ -120,7 +117,6 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
       const ratio = dist / lastPinchDist;
       zoomTo(state.scale * ratio, center.x, center.y);
       lastPinchDist = dist;
-      lastPinchCenter = center;
     } else if (dragging && e.touches.length === 1) {
       state.x = originAtDragStart.x + (e.touches[0].clientX - dragStart.x);
       state.y = originAtDragStart.y + (e.touches[0].clientY - dragStart.y);

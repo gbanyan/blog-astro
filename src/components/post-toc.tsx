@@ -52,12 +52,11 @@ export function PostToc({
     }
 
     let observer: IntersectionObserver | null = null;
-    let rafId1: number;
     let rafId2: number;
 
     // Use double requestAnimationFrame to ensure DOM has been painted
     // This is more reliable than setTimeout for DOM updates
-    rafId1 = requestAnimationFrame(() => {
+    const rafId1 = requestAnimationFrame(() => {
       rafId2 = requestAnimationFrame(() => {
         const headings = Array.from(
           container.querySelectorAll<HTMLElement>('h2, h3')

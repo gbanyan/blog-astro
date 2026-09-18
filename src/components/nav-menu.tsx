@@ -17,6 +17,7 @@ import {
   FiChevronDown,
   FiChevronRight,
 } from 'react-icons/fi';
+import type { IconType } from 'react-icons';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { useModalDialog } from '@/lib/use-modal-dialog';
 
@@ -33,7 +34,7 @@ export type IconKey =
   | 'device'
   | 'menu';
 
-const ICON_MAP: Record<IconKey, any> = {
+const ICON_MAP: Record<IconKey, IconType> = {
   home: FiHome,
   blog: FiFileText,
   file: FiFile,

@@ -104,7 +104,6 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
                       return (
                         // Remote Mastodon CDN URLs (arbitrary hosts) —
                         // next/image would require unbounded remotePatterns.
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           key={att.id}
                           src={src}
@@ -158,7 +157,6 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
                         >
                           {/* Remote Mastodon CDN preview URL — next/image can't be
                               used for arbitrary remote hosts (see image note above). */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={att.preview_url}
                             alt={att.description ?? labels.audio}

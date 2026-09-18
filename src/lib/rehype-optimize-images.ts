@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { imageSize } from 'image-size';
 import { visit } from 'unist-util-visit';
+import type { Root } from 'hast';
 
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 675;
@@ -48,8 +49,8 @@ function readDimensions(filePath: string): { width: number; height: number } {
  * dimensions for CLS-safe layout, and mark images for lazy loading.
  */
 export function rehypeOptimizeImages() {
-  return (tree: any) => {
-    visit(tree, 'element', (node: any) => {
+  return (tree: Root) => {
+    visit(tree, 'element', (node) => {
       if (node.tagName !== 'img' || !node.properties) return;
       if (typeof node.properties.src !== 'string') return;
 

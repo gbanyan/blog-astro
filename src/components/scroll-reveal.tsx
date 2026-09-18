@@ -17,6 +17,9 @@ export function ScrollReveal() {
     );
     if (els.length === 0) return;
 
+    // `revealAll` can run before the assignment below (IO-unsupported early
+    // return), so `const` would hit the temporal dead zone — `let` is deliberate.
+    // eslint-disable-next-line prefer-const
     let fallbackId: number | undefined;
     let observer: IntersectionObserver | null = null;
     let done = false;

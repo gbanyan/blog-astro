@@ -9,6 +9,19 @@ export type RepoSummary = {
   updatedAt: string;
 };
 
+/** Minimal view of the GitHub API repository objects this module reads. */
+type GithubRepoJson = {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  language: string | null;
+  fork: boolean;
+  stargazers_count: number;
+  updated_at: string;
+};
+
 const GITHUB_API_BASE = 'https://api.github.com';
 
 function getGithubHeaders() {
@@ -52,7 +65,7 @@ export async function fetchPublicRepos(usernameOverride?: string): Promise<RepoS
       return [];
     }
 
-    const data = (await res.json()) as any[];
+    const data = (await res.json()) as GithubRepoJson[];
 
     return data
       .filter((repo) => !repo.fork)

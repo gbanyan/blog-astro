@@ -20,7 +20,6 @@ const SearchModal = lazy(
  */
 export function SiteHeaderSearch({
   recentPosts = [],
-  locale,
   searchLabels,
   errorLabel,
   currentPath,

@@ -1,5 +1,5 @@
 import { visit } from 'unist-util-visit';
-
+import type { Root } from 'hast';
 const LOCALIZED_ROUTE_PREFIXES = ['/blog', '/pages', '/tags', '/projects'];
 
 function isEnglishSource(file: { path?: string; history?: string[] }) {
@@ -19,11 +19,11 @@ function isLocalizedRoute(href: string) {
 
 /** Prefix internal Markdown routes for documents authored in the English locale. */
 export function rehypeLocalizeLinks() {
-  return (tree: any, file: { path?: string; history?: string[] }) => {
+  return (tree: Root, file: { path?: string; history?: string[] }) => {
     if (!isEnglishSource(file)) return;
 
-    visit(tree, 'element', (node: any) => {
-      if (node.tagName !== 'a' || typeof node.properties?.href !== 'string') return;
+    visit(tree, 'element', (node) => {
+      if (node.tagName !== 'a' || typeof node.properties.href !== 'string') return;
 
       const href = node.properties.href;
       if (isLocalizedRoute(href) && !/^\/(?:zh-TW|en)(?:\/|$)/.test(href)) {

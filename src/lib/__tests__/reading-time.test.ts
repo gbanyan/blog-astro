@@ -30,7 +30,6 @@ describe('countWords', () => {
 
   it('does not collapse a CJK paragraph into one token', () => {
     const paragraph = '這是一段沒有空格的繁體中文文章內容。';
-    const latinEquivalent = 'a b c d e f g h i j k l';
     // CJK paragraph must count each char, not act like a single space-delimited word
     expect(countWords(paragraph)).toBe(cjkCharCount(paragraph));
   });

@@ -1,23 +1,24 @@
 import { visit } from 'unist-util-visit';
+import type { Element, ElementContent, Root, Text } from 'hast';
 
 /**
  * Rehype plugin to transform GitHub-style blockquote alerts
  * Transforms: > [!NOTE] into styled callout boxes
  */
 export function rehypeCallouts() {
-  return (tree: any) => {
+  return (tree: Root) => {
     visit(tree, 'element', (node) => {
       // Only process blockquotes
       if (node.tagName !== 'blockquote') return;
       if (!node.children || node.children.length === 0) return;
 
       // Find the first non-whitespace child
-      let contentChild: any = null;
+      let contentChild: ElementContent | null = null;
       for (const child of node.children) {
         if (child.type === 'text' && child.value.trim()) {
           contentChild = child;
           break;
-        } else if (child.tagName === 'p') {
+        } else if (child.type === 'element' && child.tagName === 'p') {
           contentChild = child;
           break;
         }
@@ -26,14 +27,18 @@ export function rehypeCallouts() {
       if (!contentChild) return;
 
       // Find the first text node
-      let textNode: any = null;
-      let textParent: any = null;
+      let textNode: Text | null = null;
+      let textParent: Element | null = null;
 
       if (contentChild.type === 'text') {
         // Direct text child
         textNode = contentChild;
         textParent = node;
-      } else if (contentChild.tagName === 'p' && contentChild.children) {
+      } else if (
+        contentChild.type === 'element' &&
+        contentChild.tagName === 'p' &&
+        contentChild.children
+      ) {
         // Text inside paragraph - find first non-whitespace text
         for (const child of contentChild.children) {
           if (child.type === 'text' && child.value.trim()) {
@@ -44,7 +49,7 @@ export function rehypeCallouts() {
         }
       }
 
-      if (!textNode || textNode.type !== 'text') return;
+      if (!textNode || !textParent) return;
 
       // Check if text starts with [!TYPE]
       const match = textNode.value.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
@@ -77,28 +82,28 @@ export function rehypeCallouts() {
         caution: '🚨',
       };
 
-      const icon = {
+      const icon: Element = {
         type: 'element',
         tagName: 'div',
         properties: { className: ['callout-icon'] },
         children: [{ type: 'text', value: iconMap[type] || '📝' }],
       };
 
-      const title = {
+      const title: Element = {
         type: 'element',
         tagName: 'div',
         properties: { className: ['callout-title'] },
         children: [{ type: 'text', value: type.toUpperCase() }],
       };
 
-      const header = {
+      const header: Element = {
         type: 'element',
         tagName: 'div',
         properties: { className: ['callout-header'] },
         children: [icon, title],
       };
 
-      const content = {
+      const content: Element = {
         type: 'element',
         tagName: 'div',
         properties: { className: ['callout-content'] },

@@ -1,5 +1,4 @@
 import { siteConfig } from '@/lib/config';
-import type { Locale } from '@/lib/locales';
 import type { Page, Post } from '@/lib/content';
 
 /**
