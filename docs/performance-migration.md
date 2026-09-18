@@ -2,8 +2,8 @@
 
 Measured September 18, 2026. Production origin: `https://blog.gbanyan.net`.
 Worker: `blog-astro`, static-assets-only, existing `blog.gbanyan.net/*` route.
-No Cloudflare MCP tools were exposed in this session; the installed Wrangler
-4.134.0 CLI verified the authenticated account and deployed asset configuration.
+Wrangler 4.134.0 initially verified the deployed asset configuration. Cloudflare
+MCP authentication subsequently succeeded, allowing the account audit below.
 
 ## Findings and changes
 
@@ -70,10 +70,29 @@ reducing the first-visit CJK font subset payload without changing typography.
 
 ## Cloudflare follow-up audit
 
-The documentation MCP connected on September 18, 2026. Account MCP servers
-still reported `not_logged_in`; Wrangler's existing OAuth credential could
-read Worker settings and routes, but zone settings, rulesets, and DNS reads
-returned HTTP 403. No zone-wide configuration was changed.
+The account MCP authenticated on September 18, 2026. Earlier Wrangler OAuth
+403 responses for zone settings, rulesets, and DNS no longer block the audit.
+
+- Confirmed HTTP/2, HTTP/3, Brotli, Early Hints, 0-RTT, and Always Use HTTPS are
+  enabled. SSL is strict, browser cache TTL is zero (respect origin), and
+  Rocket Loader is off. These settings were retained.
+- Disabled the legacy **Ghost Blog Cache** rule, which matched every path on
+  `blog.gbanyan.net` and forced a 7,200-second edge TTL over origin policy.
+  This removes an obsolete origin-cache override; it is not a measured speed
+  improvement or evidence that Workers Static Assets had been stale.
+  Only this rule changed; a read-back confirmed all other cache rules were
+  identical. No cache purge or DNS change was performed.
+- Rollback: enable **Ghost Blog Cache** in the zone's Cache Rules dashboard.
+  Its expression and action parameters are preserved. API identifiers:
+  zone `73e80ae899f224ef9b568bbad958c761`, ruleset
+  `1bf283fd013548f398c14645e5e1370a`, rule
+  `d457170b045d4a00aeb328f28a8a47df`. Resulting ruleset version: 10.
+- The proxied blog CNAME still targets Vercel as the existing rollback setup;
+  the Worker route serves current traffic. Preserve both until a deliberate
+  origin cutover is planned.
+- The existing Cloudflare Web Analytics configuration for `gbanyan.net` is
+  disabled. It was left unchanged; no field Core Web Vitals improvement can
+  be established from this audit.
 
 - Verified the production route points to `blog-astro`, with fail-open disabled.
 - Verified workers.dev and preview URLs are disabled in the live account.
