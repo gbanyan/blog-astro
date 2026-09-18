@@ -117,7 +117,8 @@ export function SearchModal({
         // bundlePath must match public/_pagefind copy from build script
         await pagefind.options({ bundlePath: '/_pagefind/' });
         if (cancelled) return;
-        pagefind.init();
+        await pagefind.init();
+        if (cancelled) return;
         pagefindRef.current = pagefind;
         setPagefindStatus('ready');
       } catch (error) {
