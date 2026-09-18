@@ -10,5 +10,11 @@
     "directory": "./dist",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  "routes": [
+    // Edge route: requires the existing blog.gbanyan.net DNS record to be
+    // Proxied (orange cloud) in the Cloudflare dashboard. Rollback = remove
+    // this route and redeploy; traffic returns to the Vercel origin instantly.
+    { "pattern": "blog.gbanyan.net/*", "zone_name": "gbanyan.net" }
+  ]
 }
