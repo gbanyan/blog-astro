@@ -23,6 +23,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Must run BEFORE actions/checkout so the Gitea-SSH submodule URL is
+      # rewritten to the public GitHub mirror during the submodule clone.
+      - name: Redirect submodule fetch to public GitHub mirror
+        run: |
+          git config --global url."https://github.com/gbanyan/personal-blog.git".insteadOf "ssh://git@git.gbanyan.net:30009/personal/personal-blog.git"
+
       - uses: actions/checkout@v5
         with:
           submodules: recursive
@@ -33,13 +39,8 @@ jobs:
           node-version: 22
           cache: npm
 
-      # The submodule's fetch URL is Gitea SSH (local dev convention); on CI,
-      # rewrite it to the public GitHub mirror so no credentials are needed.
-      - name: Redirect submodule fetch to public GitHub mirror
-        run: |
-          git config --global url."https://github.com/gbanyan/personal-blog.git".insteadOf "ssh://git@git.gbanyan.net:30009/personal/personal-blog.git"
-          git submodule sync
-          git -C content fetch origin main
+      - name: Sync submodule to latest content
+        run: git -C content fetch origin main
 
       # Hourly/manual runs build the LATEST content; the pointer bump is
       # committed back so push-triggered builds stay reproducible.
