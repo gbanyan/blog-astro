@@ -50,14 +50,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Rehype: callouts → built-in Shiki dual theme (`github-light` / `github-dark`, `defaultColor: false`, replacing rehype-pretty-code) → slug → autolink-headings → image optimizer → link localizer
   - `src/lib/rehype-optimize-images.ts` rewrites `../assets/` → `/assets/` and attaches intrinsic width/height + `loading=lazy` + `sizes`
   - `src/lib/rehype-localize-links.ts` prefixes `/en` to internal routes in English-source documents
-- Built HTML is rendered verbatim by Astro (no runtime re-parse); Shiki CSS selectors are `.astro-code` (see `styles/globals.css`)
+- Built HTML is rendered verbatim by Astro (no runtime re-parse); Shiki CSS selectors are `.astro-code` (see `src/styles/globals.css`)
 - smartypants is OFF — the rendered-output contract stays byte-comparable with the source site
 
 ## Styling
 
 - Tailwind CSS v4 with CSS-first configuration (no `tailwind.config.cjs`; wired via `@tailwindcss/vite`)
-- Dark mode via `@custom-variant dark` in `styles/globals.css` (class-based, toggled by the inline theme script in `layout.astro`)
-- Theme customization via the `@theme` block in `styles/globals.css`: colors, fonts, easing, durations, shadows, keyframes, animations
+- Dark mode via `@custom-variant dark` in `src/styles/globals.css` (class-based, toggled by the inline theme script in `layout.astro`)
+- Theme customization via the `@theme` block in `src/styles/globals.css`: colors, fonts, easing, durations, shadows, keyframes, animations
 - Accent color system via CSS variables set in `src/layouts/layout.astro` from `PUBLIC_COLOR_*` env vars: `--color-accent`, `--color-accent-soft`, `--color-accent-text-light`, `--color-accent-text-dark`
 - Typography plugin (`@tailwindcss/typography`) loaded via `@plugin` directive; prose dark mode handled by custom `.dark .prose` CSS overrides
 - Fonts via the Astro Fonts API (`astro.config.mjs`): Cormorant Garamond (`--font-display-latin`), LXGW WenKai TC (`--font-display-cjk`), Google provider; English headings use the serif display font, body uses the CJK-aware stack
