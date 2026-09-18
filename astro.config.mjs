@@ -53,7 +53,15 @@ export default defineConfig({
     },
   },
   integrations: [react()],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    // @resvg/resvg-js ships a native .node binary (og-render.tsx). The dep
+    // optimizer's rolldown build cannot parse it ("stream did not contain
+    // valid UTF-8"), dies with an unhandled rejection on every dev start,
+    // and leaves every request that needs optimized deps hanging forever.
+    // Native modules must be loaded by Node at request time instead.
+    optimizeDeps: { exclude: ['@resvg/resvg-js'] },
+  },
   fonts: [
     {
       provider: fontProviders.google(),
