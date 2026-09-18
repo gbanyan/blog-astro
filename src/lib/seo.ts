@@ -351,6 +351,35 @@ export function localizedSitemapXml(locale: Locale): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls}</urlset>`;
 }
 
+/**
+ * Serializes the combined (both-locale) sitemap the way the source root
+ * `app/sitemap.ts` emits it through Next.js' file convention: one element
+ * per line, space before the `xhtml:link` self-closing slash, `lastmod`
+ * (ISO milliseconds) before `changefreq`/`priority`, trailing newline.
+ */
+export function rootSitemapXml(): string {
+  const urls = localizedSitemapEntries()
+    .map((entry) => {
+      const lines = [`<loc>${escapeXml(entry.url)}</loc>`];
+      if (entry.alternates?.languages) {
+        for (const [language, href] of Object.entries(entry.alternates.languages)) {
+          lines.push(
+            `<xhtml:link rel="alternate" hreflang="${escapeXml(language)}" href="${escapeXml(href || '')}" />`
+          );
+        }
+      }
+      if (entry.lastModified) {
+        lines.push(`<lastmod>${entry.lastModified.toISOString()}</lastmod>`);
+      }
+      lines.push(`<changefreq>${entry.changeFrequency}</changefreq>`);
+      lines.push(`<priority>${entry.priority}</priority>`);
+      return `<url>\n${lines.join('\n')}\n</url>`;
+    })
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls}\n</urlset>\n`;
+}
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
