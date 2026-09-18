@@ -27,6 +27,8 @@ export type ContentDocument = Post | Page;
  */
 export interface HeadModel {
   title: string;
+  /** Render <title> without the "| <site>" template suffix (home pages). */
+  titleAbsolute?: boolean;
   description?: string;
   canonical: string;
   alternates: { locale: string; href: string }[]; // hreflang pairs incl. x-default
@@ -192,6 +194,8 @@ export function metadataForPath({
 
   return {
     title,
+    // Live-source behavior: the home page title is absolute (no suffix).
+    titleAbsolute: path === '/' || path === '',
     description,
     canonical: url,
     alternates: Object.entries(languages).map(([candidateLocale, href]) => ({

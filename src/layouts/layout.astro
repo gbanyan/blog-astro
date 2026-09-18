@@ -92,13 +92,23 @@ const accentCss = `:root {
   --color-accent-text-light: ${theme.accentTextLight};
   --color-accent-text-dark: ${theme.accentTextDark};
 }`;
+
+// Next.js title.template parity: segment titles gain the "| <site>" suffix;
+// home pages (titleAbsolute) and already-suffixed titles stay absolute.
+const brandTitle = getDictionary(locale).brand.title;
+const fullTitle =
+  head.titleAbsolute ||
+  head.title === brandTitle ||
+  head.title?.includes(` | ${brandTitle}`)
+    ? head.title
+    : `${head.title} | ${brandTitle}`;
 ---
 
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{head.title}</title>
+    <title>{fullTitle}</title>
     {head.description && <meta name="description" content={head.description} />}
     <meta name="creator" content={siteConfig.author} />
     <link rel="canonical" href={head.canonical} />
