@@ -29,7 +29,7 @@ jobs:
         run: |
           git config --global url."https://github.com/gbanyan/personal-blog.git".insteadOf "ssh://git@git.gbanyan.net:30009/personal/personal-blog.git"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
