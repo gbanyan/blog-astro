@@ -58,8 +58,11 @@ function highlightPlain(text: string, query: string): string {
   return escaped.replace(re, '<mark>$1</mark>');
 }
 
-function localizeInternalUrl(url: string, locale: SupportedLocale): string {
-  if (!url.startsWith('/') || url.startsWith('//')) return url;
+function localizeInternalUrl(rawUrl: string, locale: SupportedLocale): string {
+  if (!rawUrl.startsWith('/') || rawUrl.startsWith('//')) return rawUrl;
+  // Pagefind indexes directory output (`/blog/x/`); canonical URLs have no
+  // trailing slash, and the slashed form costs a redirect on every click.
+  const url = rawUrl.length > 1 ? rawUrl.replace(/\/+$/, '') : rawUrl;
 
   const withoutEnglishPrefix =
     url === '/en'
