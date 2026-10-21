@@ -1,12 +1,12 @@
-import type { Post } from '@/lib/content';
 import { siteConfig } from '@/lib/config';
 import { FiCalendar, FiClock, FiTag } from 'react-icons/fi';
 import { MetaItem } from './meta-item';
-import { estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
+import { readingTimeLabel } from '@/lib/reading-time';
+import { POST_THUMBNAIL_SIZES, postListExcerpt, type PostListEntry } from '@/lib/post-list';
 import { clsx } from 'clsx';
 
 interface Props {
-  post: Post;
+  post: PostListEntry;
   priority?: boolean;
   variant?: 'default' | 'reading';
 }
@@ -15,19 +15,13 @@ interface Props {
  * Port of components/post-list-item.tsx. `LocalizedLink` becomes a plain
  * `<a>` (the adapter's `post.url` is already locale-localized, and Astro's
  * ClientRouter soft-navigates every internal link, matching the source's
- * `transitionTypes={[...NAV_TRANSITION]}` behavior). `next/image` becomes an
- * intrinsic `<img>` with the same width/height; the blur placeholder is
- * dropped (controller rule).
+ * `transitionTypes={[...NAV_TRANSITION]}` behavior). Takes the slim
+ * `PostListEntry` (reading time, excerpt, and the WebP thumbnail srcset are
+ * computed at build time) so island props stay small.
  */
 export function PostListItem({ post, priority = false, variant = 'default' }: Props) {
-  const readingMinutes = estimateReadingMinutes(post.body?.raw ?? '');
-  const cover =
-    post.feature_image && post.feature_image.startsWith('../assets')
-      ? post.feature_image.replace('../assets', '/assets')
-      : undefined;
-
-  const excerpt =
-    post.description || post.custom_excerpt || post.body?.raw?.slice(0, 120);
+  const { readingMinutes, thumbnail: cover } = post;
+  const excerpt = postListExcerpt(post);
   const readingVariant = variant === 'reading';
 
   return (
@@ -45,11 +39,13 @@ export function PostListItem({ post, priority = false, variant = 'default' }: Pr
       {cover && (
         <div className="relative flex h-24 w-24 flex-none overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800 sm:h-auto sm:w-40">
           <img
-            src={cover}
+            srcSet={cover.srcset}
+            sizes={cover.srcset ? POST_THUMBNAIL_SIZES : undefined}
+            src={cover.src}
             alt={post.title}
-            width={320}
-            height={240}
-            sizes="(max-width: 640px) 96px, 160px"
+            width={cover.width}
+            height={cover.height}
+            decoding="async"
             {...(priority ? { loading: 'eager', fetchPriority: 'high' } : { loading: 'lazy' })}
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           />
@@ -57,9 +53,9 @@ export function PostListItem({ post, priority = false, variant = 'default' }: Pr
       )}
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex flex-wrap gap-3 text-xs">
-          {post.published_at && (
+          {post.publishedAt && (
             <MetaItem icon={FiCalendar}>
-              {new Date(post.published_at).toLocaleDateString(
+              {new Date(post.publishedAt).toLocaleDateString(
                 siteConfig.defaultLocale
               )}
             </MetaItem>
@@ -69,7 +65,7 @@ export function PostListItem({ post, priority = false, variant = 'default' }: Pr
               {readingTimeLabel(readingMinutes, post.locale)}
             </MetaItem>
           )}
-          {post.tags && post.tags.length > 0 && (
+          {post.tags.length > 0 && (
             <MetaItem icon={FiTag} tone="muted">
               {post.tags.slice(0, 3).join(', ')}
             </MetaItem>

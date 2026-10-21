@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { documentOgUrl, socialImageUrl } from '@/lib/og';
+import { defaultOgImage, documentOgUrl, socialImageUrl } from '@/lib/og';
 import type { Page, Post } from '@/lib/content';
 
 describe('socialImageUrl', () => {
@@ -51,5 +51,12 @@ describe('documentOgUrl', () => {
 
   it('routes pages under /og/pages/', () => {
     expect(documentOgUrl(page)).toBe('https://blog.gbanyan.net/og/pages/about.png');
+  });
+});
+
+describe('defaultOgImage', () => {
+  it('uses the per-locale build-time card when no override is configured', () => {
+    expect(defaultOgImage('zh-TW')).toBe('/og/index/zh-TW.png');
+    expect(defaultOgImage('en')).toBe('/og/index/en.png');
   });
 });

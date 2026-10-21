@@ -4,13 +4,21 @@
  * rendered statically here, no island needed).
  */
 import { FaGithub, FaTwitter, FaMastodon, FaGit, FaLinkedin } from 'react-icons/fa';
-import { FiMail } from 'react-icons/fi';
+import { FiMail, FiRss } from 'react-icons/fi';
 import { siteConfig } from '@/lib/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getLocaleFromPathname } from '@/lib/locale-switcher';
 
 // Calculate year at build time for PPR compatibility
 const currentYear = new Date().getFullYear();
 
 const { social } = siteConfig;
+
+// The footer takes no props; the locale is derived from the page URL with
+// the same rule as the language switcher (`/en` prefix → en).
+const locale = getLocaleFromPathname(Astro.url.pathname);
+const feedHref = locale === 'en' ? '/en/feed.xml' : '/feed.xml';
+const rssLabel = getDictionary(locale).common.rssFeed;
 
 const items = [
   social.github && { key: 'github', href: social.github, label: 'GitHub', icon: FaGithub },
@@ -41,7 +49,7 @@ const items = [
             target="_blank"
             rel="noopener noreferrer"
             aria-label={item.label}
-            class="text-slate-500 hover:text-accent dark:text-slate-400 dark:hover:text-accent"
+            class="text-slate-500 hover:text-accent dark:text-slate-400 dark:hover:text-accent-textDark"
           >
             <item.icon className="h-4 w-4" />
           </a>
@@ -49,4 +57,15 @@ const items = [
       </div>
     )
   }
+  <div class="mt-2">
+    <a
+      href={feedHref}
+      type="application/rss+xml"
+      data-astro-reload
+      class="inline-flex items-center gap-1.5 text-slate-500 transition-colors hover:text-accent dark:text-slate-400 dark:hover:text-accent-textDark"
+    >
+      <FiRss className="h-3.5 w-3.5" aria-hidden="true" />
+      <span>{rssLabel}</span>
+    </a>
+  </div>
 </footer>

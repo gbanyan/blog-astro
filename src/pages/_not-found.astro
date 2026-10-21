@@ -1,0 +1,102 @@
+---
+/**
+ * Shared 404 body for `src/pages/404.astro` (zh-TW) and
+ * `src/pages/en/404.astro` (English). The `_` prefix keeps this file out of
+ * routing. Workers static assets (`not_found_handling: "404-page"`) serve the
+ * nearest 404.html walking up from the requested path, so `/en/**` misses get
+ * the English page and everything else the zh-TW one.
+ */
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { documentPath, isPlaceholderDocument, localizedPath, type Locale } from '@/lib/locales';
+import { getAllPostsSorted } from '@/lib/posts';
+import { metadataForPath } from '@/lib/seo';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dictionary = getDictionary(locale);
+const head = metadataForPath({
+  title: dictionary.errors.notFoundTitle,
+  description: dictionary.errors.notFoundDescription,
+  path: '/404',
+  locale,
+});
+// Dead URLs should not be indexed; keep crawling of linked content.
+head.robots = { index: false, follow: true };
+
+const recentPosts = (await getAllPostsSorted(locale))
+  .filter((post) => !isPlaceholderDocument(post))
+  .slice(0, 5);
+const dateFormat = locale === 'en' ? 'en-US' : 'zh-TW';
+
+const links = [
+  { href: localizedPath('/', locale), label: dictionary.common.backHome },
+  { href: localizedPath('/blog', locale), label: dictionary.common.allPosts },
+  { href: localizedPath('/tags', locale), label: dictionary.common.allTags },
+];
+---
+
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <div class="flex min-h-[60vh] flex-col items-center justify-center px-4 py-12">
+      <div class="w-full max-w-xl text-center">
+        <p aria-hidden="true" class="type-display mb-2 text-6xl font-bold text-slate-300 dark:text-slate-600">404</p>
+        <h1 class="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-200">
+          {dictionary.errors.notFoundTitle}
+        </h1>
+        <p class="mb-2 text-slate-600 dark:text-slate-400">{dictionary.errors.notFoundDescription}</p>
+        <p class="mb-8 text-sm text-slate-600 dark:text-slate-400">{dictionary.errors.notFoundSearchHint}</p>
+        <nav aria-label={dictionary.common.navigationMenu} class="mb-10 flex flex-wrap items-center justify-center gap-3">
+          {
+            links.map((link, index) => (
+              <a
+                href={link.href}
+                class:list={[
+                  'inline-flex items-center rounded-lg px-5 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2',
+                  index === 0
+                    ? 'bg-slate-800 text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300'
+                    : 'border border-slate-300 text-slate-800 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800',
+                ]}
+              >
+                {link.label}
+              </a>
+            ))
+          }
+        </nav>
+        {
+          recentPosts.length > 0 && (
+            <section class="text-left" aria-labelledby="not-found-suggestions">
+              <h2 id="not-found-suggestions" class="mb-3 text-base font-semibold text-slate-800 dark:text-slate-200">
+                {dictionary.errors.notFoundSuggestions}
+              </h2>
+              <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+                {recentPosts.map((post) => (
+                  <li class="py-3">
+                    <a
+                      href={documentPath(post, locale)}
+                      class="font-medium text-slate-800 hover:text-accent focus-visible:text-accent dark:text-slate-200"
+                    >
+                      {post.title}
+                    </a>
+                    {post.published_at && (
+                      <time
+                        class="mt-0.5 block text-xs text-slate-600 dark:text-slate-400"
+                        datetime={new Date(post.published_at as Date | string).toISOString()}
+                      >
+                        {new Date(post.published_at as Date | string).toLocaleDateString(dateFormat)}
+                      </time>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+      </div>
+    </div>
+  </LayoutShell>
+</Layout>

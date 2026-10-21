@@ -16,6 +16,8 @@ import {
   type Locale,
 } from './locales';
 import { siteConfig } from './config';
+import { getDictionary } from './i18n/dictionaries';
+import { defaultOgImage, documentOgUrl } from './og';
 import { getTagSlug } from './tags';
 
 export type ContentDocument = Post | Page;
@@ -141,7 +143,8 @@ export function metadataForDocument(
         alt: document.title,
       }
     : {
-        url: absoluteUrl(siteConfig.ogImage),
+        // Per-document build-time card (/og/<collection>/<path>.png).
+        url: documentOgUrl(document),
         alt: document.title,
       };
 
@@ -157,7 +160,7 @@ export function metadataForDocument(
       title: document.title,
       description,
       url,
-      siteName: siteConfig.name,
+      siteName: getDictionary(locale).brand.title,
       locale: localeToOpenGraph(locale),
       images: [image],
     },
@@ -189,6 +192,7 @@ export function metadataForPath({
     ])
   );
   languages['x-default'] = languages[DEFAULT_LOCALE];
+  const defaultImage = absoluteUrl(defaultOgImage(locale));
 
   return {
     title,
@@ -204,18 +208,30 @@ export function metadataForPath({
       title,
       description,
       url,
-      siteName: siteConfig.name,
+      siteName: getDictionary(locale).brand.title,
       locale: localeToOpenGraph(locale),
-      images: [{ url: absoluteUrl(siteConfig.ogImage), alt: title }],
+      images: [{ url: defaultImage, alt: title }],
       ...openGraph,
     },
     twitter: twitter ?? {
       card: siteConfig.twitterCard,
       title,
       description,
-      images: [siteConfig.ogImage],
+      images: [defaultImage],
     },
   };
+}
+
+/**
+ * Absolute site logo for JSON-LD (Organization.logo / publisher.logo). The
+ * avatar may already be an absolute URL (e.g. Gravatar); only site-relative
+ * paths get the site origin. Returns null when no avatar is configured.
+ */
+export function siteLogoUrl(): string | null {
+  const avatar = siteConfig.avatar;
+  if (!avatar) return null;
+  // URL resolution keeps absolute avatars intact and prefixes relative ones.
+  return absoluteUrl(avatar);
 }
 
 function alternateDocuments(

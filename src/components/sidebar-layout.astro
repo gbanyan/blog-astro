@@ -1,7 +1,6 @@
 ---
-import { RightSidebar } from './right-sidebar';
+import RightSidebarContent from './right-sidebar-content.astro';
 import { SidebarDrawer } from './sidebar-drawer';
-import { clsx } from 'clsx';
 
 interface Props {
   locale: string;
@@ -13,11 +12,14 @@ interface Props {
 
 const { locale, tags, aboutUrl, avatarSrc, variant = 'default' } = Astro.props;
 const readingLayout = variant === 'reading';
+const sidebarLocale = locale === 'en' ? 'en' : 'zh-TW';
 
 /**
- * Static host for the source's `SidebarLayout` island. The desktop sidebar
- * and the mobile drawer live in React islands (children cannot cross the
- * Astro island boundary); the grid shell stays static.
+ * Static host for the source's `SidebarLayout`. The desktop sidebar is plain
+ * server-rendered markup (only the Mastodon feed inside it is an island, so
+ * React is not needed on mobile where the sidebar is hidden). The mobile
+ * drawer is a React island that receives the same server-rendered sidebar
+ * content as its slot (rendered into the drawer only while it is open).
  */
 ---
 <div
@@ -32,21 +34,25 @@ const readingLayout = variant === 'reading';
     <slot />
   </div>
   <div class="hidden lg:block">
-    <RightSidebar
-      client:load
-      tags={tags}
-      aboutUrl={aboutUrl}
-      avatarSrc={avatarSrc}
-      locale={locale}
-      variant={variant}
-    />
+    <aside class="hidden lg:block">
+      <div class={readingLayout ? 'sticky top-24' : 'sticky top-20'}>
+        <RightSidebarContent
+          tags={tags}
+          aboutUrl={aboutUrl}
+          avatarSrc={avatarSrc}
+          locale={sidebarLocale}
+          variant={variant}
+        />
+      </div>
+    </aside>
   </div>
 </div>
-<SidebarDrawer
-  client:load
-  tags={tags}
-  aboutUrl={aboutUrl}
-  avatarSrc={avatarSrc}
-  locale={locale}
-  variant={variant}
-/>
+<SidebarDrawer client:idle locale={sidebarLocale}>
+  <RightSidebarContent
+    tags={tags}
+    aboutUrl={aboutUrl}
+    avatarSrc={avatarSrc}
+    locale={sidebarLocale}
+    variant={variant}
+  />
+</SidebarDrawer>

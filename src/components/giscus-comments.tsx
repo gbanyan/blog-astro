@@ -39,10 +39,21 @@ export function GiscusComments({ locale }: { locale: Locale }) {
   );
 
   const missingEnvKeys = getMissingEnvKeys(config);
-  const theme =
-    resolvedTheme === 'dark'
-      ? config.PUBLIC_GISCUS_THEME_DARK
-      : config.PUBLIC_GISCUS_THEME_LIGHT;
+  // `resolvedTheme` is undefined on the first client pass (useTheme syncs in
+  // its own post-mount effect); fall back to the <html> class, which the
+  // pre-paint theme script has already set, so giscus never loads in the
+  // wrong theme and then flips.
+  const isDark =
+    resolvedTheme !== undefined
+      ? resolvedTheme === 'dark'
+      : typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('dark');
+  const theme = isDark
+    ? config.PUBLIC_GISCUS_THEME_DARK
+    : config.PUBLIC_GISCUS_THEME_LIGHT;
+  // giscus language follows the page locale; the env var only overrides the
+  // zh-TW default (giscus uses `zh-TW` / `en` codes).
+  const lang = locale === 'en' ? 'en' : config.PUBLIC_GISCUS_LANG;
   const initializedRef = useRef(false);
 
   // Mount giscus exactly once; later theme changes only post a config
@@ -68,14 +79,14 @@ export function GiscusComments({ locale }: { locale: Locale }) {
     script.setAttribute('data-emit-metadata', '0');
     script.setAttribute('data-input-position', config.PUBLIC_GISCUS_INPUT_POSITION);
     script.setAttribute('data-theme', theme);
-    script.setAttribute('data-lang', config.PUBLIC_GISCUS_LANG);
+    script.setAttribute('data-lang', lang);
     script.setAttribute('data-loading', 'lazy');
 
     ref.current.appendChild(script);
     // `theme` is intentionally excluded: it only seeds the initial
     // data-theme; later changes flow through the postMessage effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, missingEnvKeys.length]);
+  }, [config, lang, missingEnvKeys.length]);
 
   // Keep the loaded thread in sync with the active theme without remounting.
   useEffect(() => {
@@ -100,7 +111,7 @@ export function GiscusComments({ locale }: { locale: Locale }) {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200/60 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-900/30">
+    <section className="giscus-comments space-y-4 rounded-2xl border border-slate-200/60 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-900/30">
       <h2 className="type-subtitle font-semibold text-slate-900 dark:text-slate-50">{labels.title}</h2>
       <div ref={ref} />
     </section>

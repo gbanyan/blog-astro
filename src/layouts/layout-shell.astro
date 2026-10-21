@@ -30,10 +30,30 @@ const recentPosts = (await getAllPostsSorted(locale))
 ---
 
 <div class="flex min-h-screen flex-col">
+  <!-- Skip link: first focusable element, visually hidden until focused. -->
+  <a href="#main" class="skip-link">{labels.skipToContent}</a>
   <SiteHeader locale={locale} currentPath={currentPath} recentPosts={recentPosts} />
-  <main class="container mx-auto flex-1 px-4 py-6">
+  <main id="main" tabindex="-1" class="container mx-auto flex-1 px-4 py-6 focus:outline-none">
     <slot />
   </main>
   <SiteFooter />
   <BackToTop client:idle label={labels.backToTop} />
 </div>
+
+<script>
+  // ClientRouter intercepts same-page hash links and only scrolls, so move
+  // focus to <main> ourselves (capture phase runs before the router's
+  // listener, which skips default-prevented clicks).
+  document.addEventListener(
+    'click',
+    (event) => {
+      const link = (event.target as Element | null)?.closest?.('a.skip-link');
+      if (!link) return;
+      const main = document.getElementById('main');
+      if (!main) return;
+      event.preventDefault();
+      main.focus();
+    },
+    { capture: true }
+  );
+</script>

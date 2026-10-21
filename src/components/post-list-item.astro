@@ -1,8 +1,9 @@
 ---
 import type { Post } from '@/lib/content';
 import { siteConfig } from '@/lib/config';
-import ContentImage from './content-image.astro';
-import { estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
+import { getPostThumbnail } from '@/lib/content-images';
+import { POST_THUMBNAIL_SIZES, postCoverSrc, postListExcerpt, toPostListEntry } from '@/lib/post-list';
+import { readingTimeLabel } from '@/lib/reading-time';
 
 interface Props {
   post: Post;
@@ -11,13 +12,11 @@ interface Props {
 }
 
 const { post, priority = false, variant = 'default' } = Astro.props;
-const readingMinutes = estimateReadingMinutes(post.body?.raw ?? '');
-const cover =
-  post.feature_image && post.feature_image.startsWith('../assets')
-    ? post.feature_image.replace('../assets', '/assets')
-    : undefined;
-const excerpt =
-  post.description || post.custom_excerpt || post.body?.raw?.slice(0, 120);
+const entry = toPostListEntry(post);
+const { readingMinutes } = entry;
+// Same 4:3 WebP thumbnail srcset as the React list item on /blog.
+const cover = await getPostThumbnail(postCoverSrc(post));
+const excerpt = postListExcerpt(entry);
 const readingVariant = variant === 'reading';
 
 /**
@@ -39,15 +38,16 @@ const readingVariant = variant === 'reading';
   )}
   {cover && (
     <div class="relative flex h-24 w-24 flex-none overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800 sm:h-auto sm:w-40">
-      <ContentImage
-        src={cover}
+      <img
+        srcset={cover.srcset}
+        sizes={cover.srcset ? POST_THUMBNAIL_SIZES : undefined}
+        src={cover.src}
         alt={post.title}
-        width={320}
-        height={240}
-        widths={[96, 160, 192, 320]}
-        sizes="(max-width: 640px) 96px, 160px"
+        width={cover.width}
+        height={cover.height}
         loading={priority ? 'eager' : 'lazy'}
         fetchpriority={priority ? 'high' : undefined}
+        decoding="async"
         class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
       />
     </div>

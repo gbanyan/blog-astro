@@ -35,7 +35,7 @@
   --animate-float-soft: float-soft 12s ease-in-out infinite;
 }
 
-/* Calm App Router view transitions (experimental.viewTransition) */
+/* Calm ClientRouter view transitions (astro:transitions) */
 @keyframes vt-fade-out {
   to { opacity: 0; }
 }
@@ -62,22 +62,21 @@
   animation: vt-fade-in 180ms ease-out both;
 }
 
-:active-view-transition-type(nav-forward) {
-  &::view-transition-old(root) {
-    animation: vt-slide-out-left 180ms ease-out both;
-  }
-  &::view-transition-new(root) {
-    animation: vt-slide-in-right 180ms ease-out both;
-  }
+/* Directional slides. Astro's ClientRouter sets
+   `data-astro-transition="forward" | "back"` on <html> for the duration of
+   each soft navigation (it does not use view-transition types). */
+html[data-astro-transition='forward']::view-transition-old(root) {
+  animation: vt-slide-out-left 180ms ease-out both;
+}
+html[data-astro-transition='forward']::view-transition-new(root) {
+  animation: vt-slide-in-right 180ms ease-out both;
 }
 
-:active-view-transition-type(nav-back) {
-  &::view-transition-old(root) {
-    animation: vt-slide-out-right 180ms ease-out both;
-  }
-  &::view-transition-new(root) {
-    animation: vt-slide-in-left 180ms ease-out both;
-  }
+html[data-astro-transition='back']::view-transition-old(root) {
+  animation: vt-slide-out-right 180ms ease-out both;
+}
+html[data-astro-transition='back']::view-transition-new(root) {
+  animation: vt-slide-in-left 180ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1567,22 +1566,24 @@ body {
   }
 }
 
-/* Scroll reveal animations - CSS only */
+/* Scroll reveal (scroll-reveal.astro). Content is visible by default — with
+   JS off, before the script runs, and for anything already on screen. The
+   script only marks blocks that start below the fold as `reveal-pending`,
+   then adds `is-visible` as they scroll in, so the hero/LCP is never hidden. */
 .scroll-reveal {
-  opacity: 0;
-  transform: translateY(12px);
   transition: opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1),
               transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.scroll-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+.scroll-reveal.reveal-pending:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 /* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .scroll-reveal {
+  .scroll-reveal,
+  .scroll-reveal.reveal-pending:not(.is-visible) {
     opacity: 1;
     transform: none;
     transition: none;
@@ -1923,78 +1924,66 @@ body {
   @apply bg-black/50 backdrop-blur-sm;
 }
 
-/* Code Syntax Highlighting Styles (rehype-pretty-code) */
+/* Code blocks (Shiki dual theme). The block background comes from Shiki's
+   own github-light / github-dark `-bg` vars on the <pre>, so the token
+   colors always sit on the background they were designed for; only the
+   frame (border, radius, padding) is ours. */
 .prose pre {
-  @apply overflow-x-auto rounded-lg border border-slate-700 dark:border-slate-700;
+  @apply overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700;
   padding: 1rem 1.2rem;
   margin: 1.5rem 0;
-  background-color: #0f172a;
-}
-
-.dark .prose pre {
-  background-color: #020617;
 }
 
 .prose pre > code {
   @apply grid;
-  counter-reset: line;
   font-size: 0.9em;
   line-height: 1.7;
-}
-
-.prose pre > code > [data-line] {
-  padding: 0 1rem;
-  border-left: 2px solid transparent;
-}
-
-.prose pre > code > [data-line]::before {
-  counter-increment: line;
-  content: counter(line);
-  display: inline-block;
-  width: 1.5rem;
-  margin-right: 1.5rem;
-  text-align: right;
-  color: #475569;
-  user-select: none;
-}
-
-.dark .prose pre > code > [data-line]::before {
-  color: #64748b;
-}
-
-/* Highlighted lines */
-.prose pre > code > [data-highlighted-line] {
-  background-color: rgba(139, 92, 246, 0.15);
-  border-left-color: rgb(139, 92, 246);
-}
-
-.dark .prose pre > code > [data-highlighted-line] {
-  background-color: rgba(196, 181, 253, 0.15);
-  border-left-color: rgb(196, 181, 253);
 }
 
 /* Inline code */
 .prose :not(pre) > code {
   @apply rounded bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-slate-100 dark:bg-slate-700 dark:text-slate-100;
-  white-space: nowrap;
-}
-
-/* Code title (if specified in markdown: ```js title="example.js") */
-.prose [data-rehype-pretty-code-title] {
-  @apply rounded-t-lg border border-b-0 border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100;
-  margin-bottom: 0;
-}
-
-.prose [data-rehype-pretty-code-title] + pre {
-  @apply mt-0 rounded-t-none;
+  overflow-wrap: anywhere;
 }
 
 /* Shiki dual-theme tokens. astro.config.mjs sets `defaultColor: false`, so
    Shiki emits --shiki-light/--shiki-dark (plus -bg/-font-style/-font-weight)
-   as inline vars on the .astro-code element; spans inherit them. Both var
-   sets are always present on code blocks, so no fallbacks are needed. */
-.astro-code, .astro-code span { color: var(--shiki-light); background-color: var(--shiki-light-bg); font-style: var(--shiki-light-font-style); font-weight: var(--shiki-light-font-weight); }
-.dark .astro-code, .dark .astro-code span { color: var(--shiki-dark); background-color: var(--shiki-dark-bg); font-style: var(--shiki-dark-font-style); font-weight: var(--shiki-dark-font-weight); }
+   as inline vars: the -bg pair on the <pre>, the color pair per token span.
+   Only the <pre> paints the background — token spans stay transparent so a
+   block renders as one surface instead of per-token stripes. */
+.astro-code { background-color: var(--shiki-light-bg); }
+.dark .astro-code { background-color: var(--shiki-dark-bg); }
+.astro-code, .astro-code span { color: var(--shiki-light); font-style: var(--shiki-light-font-style); font-weight: var(--shiki-light-font-weight); }
+.dark .astro-code, .dark .astro-code span { color: var(--shiki-dark); font-style: var(--shiki-dark-font-style); font-weight: var(--shiki-dark-font-weight); }
+
+/* Code block chrome added by code-copy.astro: the <pre> is wrapped in a
+   positioned container so the language label and copy button can sit in
+   the block's top-right corner without scrolling away with wide code. */
+.prose .code-block {
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+.prose .code-block > pre {
+  margin: 0;
+  padding-top: 2.5rem;
+}
+
+.code-block-toolbar {
+  @apply absolute right-2 top-2 flex items-center gap-2;
+}
+
+.code-block-lang {
+  @apply select-none font-mono text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400;
+}
+
+.code-block-copy {
+  @apply inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-300/80 bg-white/80 px-2 font-sans text-xs text-slate-600 transition-colors duration-150 hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-white;
+}
+
+.code-block-copy[data-state='copied'] {
+  @apply border-accent text-accent-textLight dark:text-accent-textDark;
+}
 
 /* GitHub-style Callouts/Alerts */
 .prose .callout {
@@ -2276,7 +2265,7 @@ body {
 }
 
 /* Static SectionDivider bar (section-divider-static.astro): animates in
-   when the page's ScrollReveal island marks the sibling content reveal
+   when the page's scroll-reveal script marks the sibling content reveal
    visible — mirrors the source island's observer-on-wrapper behavior. */
 .section-divider > .scroll-divider-bar {
   transform: scaleX(0.5);
@@ -2285,4 +2274,122 @@ body {
 .section-divider:has(> .scroll-reveal.is-visible) > .scroll-divider-bar {
   transform: scaleX(1);
   opacity: 1;
+}
+
+/* Skip link (layout-shell.astro): off-screen until keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 1300;
+  transform: translateY(-200%);
+  @apply rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-lg ring-2 ring-accent dark:bg-slate-900 dark:text-slate-100;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+  outline: none;
+}
+
+/* Headings focused programmatically by the TOC (tabindex=-1) keep a ring
+   only for keyboard users. */
+.prose :is(h2, h3)[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Print: article only, black on white, light code theme. */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html,
+  html.dark {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* Site chrome and interactive widgets */
+  .skip-link,
+  body header:not(main header),
+  aside:not(.prose aside),
+  .fixed,
+  .footer-cue,
+  .giscus-comments,
+  .code-block-toolbar,
+  .mermaid-zoom-bar,
+  .scroll-divider-bar,
+  [data-pagefind-ignore] {
+    display: none !important;
+  }
+
+  /* Ink: black text, no tinted surfaces — except syntax-highlighted code,
+     which keeps the light Shiki palette. */
+  body *:not(.astro-code, .astro-code *) {
+    color: #000 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .astro-code,
+  .dark .astro-code {
+    background-color: var(--shiki-light-bg) !important;
+  }
+  .astro-code,
+  .astro-code span,
+  .dark .astro-code,
+  .dark .astro-code span {
+    color: var(--shiki-light) !important;
+    font-style: var(--shiki-light-font-style) !important;
+    font-weight: var(--shiki-light-font-weight) !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Never print half-revealed content */
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .prose {
+    max-width: none !important;
+    font-size: 11pt;
+  }
+
+  /* Long lines wrap instead of being clipped by overflow-x */
+  .prose pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    border-color: #ccc !important;
+  }
+
+  .prose pre,
+  .prose figure,
+  .prose img,
+  .prose table,
+  .prose blockquote,
+  .prose .callout,
+  .mermaid-diagram {
+    break-inside: avoid;
+  }
+
+  .prose :is(h1, h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  /* Spell out external link targets */
+  .prose a[href^='http']:not(:has(img))::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    font-weight: normal;
+    overflow-wrap: anywhere;
+  }
 }

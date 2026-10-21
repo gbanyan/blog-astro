@@ -69,7 +69,12 @@ export function PostLayoutToc({
       panelZ={1150}
     >
       <Suspense fallback={null}>
-        <PostToc contentKey={contentKey} title={labels.tableOfContents} />
+        <PostToc
+          contentKey={contentKey}
+          title={labels.tableOfContents}
+          showTitle={false}
+          onLinkClick={() => setIsTocOpen(false)}
+        />
       </Suspense>
     </MobileDrawer>
   );
@@ -78,7 +83,7 @@ export function PostLayoutToc({
     <button
       onClick={() => setIsTocOpen(true)}
       className={cn(
-        'fixed bottom-6 right-16 z-40 flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-600 shadow-md backdrop-blur-sm transition hover:bg-slate-50 hover:text-accent dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-accent lg:hidden',
+        'fixed bottom-6 right-[4.5rem] z-40 flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-600 shadow-md backdrop-blur-sm transition hover:bg-slate-50 hover:text-accent dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-accent-textDark lg:hidden',
         isTocOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
       )}
       aria-label={labels.tableOfContents}
@@ -94,7 +99,7 @@ export function PostLayoutToc({
     <button
       onClick={() => setDesktopTocOpen(!isDesktopTocOpen)}
       className={cn(
-        'fixed bottom-6 right-16 z-40 hidden h-9 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-600 shadow-md backdrop-blur-sm transition hover:bg-slate-50 hover:text-accent dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-accent lg:flex'
+        'fixed bottom-6 right-[4.5rem] z-40 hidden h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-600 shadow-md backdrop-blur-sm transition hover:bg-slate-50 hover:text-accent dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-accent-textDark lg:flex'
       )}
       aria-label={isDesktopTocOpen ? labels.hideTableOfContents : labels.showTableOfContents}
       aria-expanded={isDesktopTocOpen}

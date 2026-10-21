@@ -42,8 +42,10 @@ import {
   localizedSitemapEntries,
   metadataForDocument,
   metadataForPath,
+  siteLogoUrl,
   type HeadModel,
 } from '@/lib/seo';
+import { localizedRobots, localizedRobotsText, nextRobotsText } from '@/lib/robots';
 import type { Post } from '@/lib/content';
 
 function makeDoc(overrides: Partial<Post> = {}): Post {
@@ -147,5 +149,38 @@ describe('metadataForDocument', () => {
       'zh-TW': 'https://blog.gbanyan.net/blog/x',
       'x-default': 'https://blog.gbanyan.net/blog/x',
     });
+  });
+});
+
+describe('site-level metadata', () => {
+  it('names the site with the localized brand title and the default OG card', () => {
+    const zh = metadataForPath({ title: 'Posts', path: '/blog', locale: 'zh-TW' });
+    expect(zh.openGraph.siteName).toBe('霍德爾之目');
+    expect(zh.openGraph.images[0].url).toBe('https://blog.gbanyan.net/og/index/zh-TW.png');
+    const en = metadataForPath({ title: 'Posts', path: '/blog', locale: 'en' });
+    expect(en.openGraph.siteName).toBe('The Eye of Höðr');
+    expect(en.twitter.images[0]).toBe('https://blog.gbanyan.net/og/index/en.png');
+  });
+
+  it('uses the per-document card for documents without a feature image', () => {
+    const doc = { title: 't', locale: 'zh-TW', url: '/blog/x', flattenedPath: 'x', __ignoredType: 'Post', _id: 'x.md' };
+    const meta = metadataForDocument(doc as unknown as Post, []);
+    expect(meta.openGraph.images[0].url).toBe('https://blog.gbanyan.net/og/posts/x.png');
+  });
+
+  it('does not double-prefix an absolute avatar logo', () => {
+    const logo = siteLogoUrl();
+    if (logo) expect(logo).not.toMatch(/^https?:\/\/[^/]+https?:/);
+  });
+});
+
+describe('robots.txt', () => {
+  it('drops Next.js-era paths and the non-standard Host line', () => {
+    const text = nextRobotsText(localizedRobots('zh-TW', '/sitemap.xml'));
+    expect(text).not.toMatch(/_next|\/api\/|^Host:/m);
+    expect(text).toContain('Sitemap: https://blog.gbanyan.net/sitemap.xml');
+    const en = localizedRobotsText(localizedRobots('en', '/en/sitemap.xml'));
+    expect(en).not.toMatch(/^Host:/m);
+    expect(en).toContain('Sitemap: https://blog.gbanyan.net/en/sitemap.xml');
   });
 });

@@ -31,7 +31,7 @@ export function FooterCue({ label }: { label: string }) {
   }, []);
 
   return (
-    <div ref={ref} className="flex flex-col items-center gap-2 py-4 text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+    <div ref={ref} className="footer-cue flex flex-col items-center gap-2 py-4 text-[11px] uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
       <span className="text-xs">{label}</span>
       <span
         className={`h-10 w-px overflow-hidden rounded-full bg-gradient-to-b from-transparent via-accent to-transparent transition-[height,opacity] duration-500 ease-snappy ${

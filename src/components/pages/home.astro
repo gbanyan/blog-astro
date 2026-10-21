@@ -45,7 +45,7 @@ const collectionPageSchema = {
         {siteConfig.name} — {dictionary.common.latestPosts} — {dictionary.brand.tagline}
       </h1>
       <HeroSection
-        client:load
+        client:idle
         title={`${siteConfig.name} — ${dictionary.common.latestPosts}`}
         tagline={dictionary.brand.tagline}
         ariaLabel={dictionary.terminal.ariaLabel(
@@ -64,7 +64,7 @@ const collectionPageSchema = {
           </h2>
           <a
             href={localizedPath('/blog', locale)}
-            class="shrink-0 text-sm font-medium text-accent-textLight transition-colors hover:text-accent dark:text-accent-textDark dark:hover:text-accent"
+            class="shrink-0 text-sm font-medium text-accent-textLight transition-colors hover:text-accent dark:text-accent-textDark dark:hover:text-accent-textDark"
           >
             {dictionary.common.allPosts} →
           </a>

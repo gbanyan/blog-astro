@@ -17,8 +17,9 @@ import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 /**
  * Mastodon feed card.
- * Data is fetched client-side on mount: the component resolves the account
- * id from the configured profile URL and then pulls the latest statuses
+ * Data is fetched client-side on mount: unless the host resolved the account
+ * id at build time (`accountId` prop), the component looks it up from the
+ * configured profile URL, then pulls the latest statuses
  * directly from the Mastodon instance via the public API. Best-effort — on
  * lookup or network failure it renders an empty feed.
  */
@@ -50,7 +51,7 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
 
   if (!statuses || statuses.length === 0) {
     return (
-      <p className="type-small text-slate-400 dark:text-slate-400">
+      <p className="type-small text-slate-500 dark:text-slate-400">
         {labels.noStatus}
       </p>
     );
@@ -76,7 +77,7 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
             >
               {/* Boost indicator */}
               {status.reblog && (
-                <div className="type-small flex items-center gap-1 text-slate-400 dark:text-slate-400">
+                <div className="type-small flex items-center gap-1 text-slate-500 dark:text-slate-400">
                   <FiArrowRight className="h-2.5 w-2.5 rotate-90" />
                   <span>{labels.boosted}</span>
                 </div>
@@ -173,7 +174,7 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
 
               {/* Timestamp */}
               <time
-                className="type-small block text-slate-400 dark:text-slate-400"
+                className="type-small block text-slate-500 dark:text-slate-400"
                 dateTime={status.created_at}
               >
                 {relativeTime}
@@ -185,7 +186,16 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
     </div>
   );
 }
-export function MastodonFeed({ locale, labels }: { locale: Locale; labels: Dictionary['mastodon'] }) {
+export function MastodonFeed({
+  locale,
+  labels,
+  accountId: prefetchedAccountId,
+}: {
+  locale: Locale;
+  labels: Dictionary['mastodon'];
+  /** Resolved at build time when possible; skips the runtime account lookup. */
+  accountId?: string | null;
+}) {
   const [statuses, setStatuses] = useState<MastodonStatus[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -197,7 +207,7 @@ export function MastodonFeed({ locale, labels }: { locale: Locale; labels: Dicti
       try {
         const parsed = parseMastodonUrl(mastodonUrl);
         if (!parsed) throw new Error('unparseable mastodon url');
-        const accountId = await fetchAccountId(parsed.instance, parsed.username);
+        const accountId = prefetchedAccountId || (await fetchAccountId(parsed.instance, parsed.username));
         if (!accountId) throw new Error('account lookup failed');
         const list = await fetchStatuses(parsed.instance, accountId, 5);
         if (!cancelled) {
@@ -212,7 +222,7 @@ export function MastodonFeed({ locale, labels }: { locale: Locale; labels: Dicti
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [prefetchedAccountId]);
 
   const mastodonUrl = siteConfig.social.mastodon;
   if (!mastodonUrl) return null;

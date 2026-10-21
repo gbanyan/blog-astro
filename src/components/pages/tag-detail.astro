@@ -8,7 +8,8 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import SectionDividerStatic from '@/components/section-divider-static.astro';
 import { PostListWithControls } from '@/components/post-list-with-controls';
-import { ScrollReveal } from '@/components/scroll-reveal';
+import ScrollReveal from '@/components/scroll-reveal.astro';
+import { getPostListEntries } from '@/lib/content-images';
 
 interface Props {
   locale: Locale;
@@ -23,6 +24,9 @@ const { tags: sidebarTags, aboutUrl, avatarSrc } = getSidebarData(locale);
 const posts = getPostsByLocale(locale).filter(
   (post) => post.tags && post.tags.some((t) => getTagSlug(t) === tagSlug)
 );
+
+// Slim, build-time-computed entries keep the island props small.
+const listEntries = await getPostListEntries(posts);
 
 const tagLabel =
   posts[0]?.tags?.find((t) => getTagSlug(t) === tagSlug) ?? tagSlug;
@@ -86,6 +90,6 @@ const collectionPageSchema = {
       </p>
     </div>
   </SectionDividerStatic>
-  <PostListWithControls client:load posts={posts} locale={locale} />
+  <PostListWithControls client:load posts={listEntries} locale={locale} />
 </SidebarLayout>
-<ScrollReveal client:load />
+<ScrollReveal />

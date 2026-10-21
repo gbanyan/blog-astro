@@ -43,6 +43,8 @@ export type Dictionary = {
     noMatchingPosts: string;
     previousPage: string;
     nextPage: string;
+    pagination: string;
+    goToPage: (page: number) => string;
     sidebar: string;
     openSidebar: string;
     closeSidebar: string;
@@ -63,11 +65,21 @@ export type Dictionary = {
     relatedPosts: string;
     relatedPostsDescription: string;
     footerCue: string;
+    skipToContent: string;
+    updatedOn: string;
+    copyCode: string;
+    codeCopied: string;
+    copyFailed: string;
     switchToLight: string;
     switchToDark: string;
     openMenu: string;
     closeMenu: string;
     navigationMenu: string;
+    /** Accessible name of the desktop header `<nav>`. */
+    mainNavigation: string;
+    /** `{year}` placeholder — passed to the NavMenu island, so must stay a string. */
+    copyright: string;
+    rssFeed: string;
   };
   search: {
     titleMatches: string;
@@ -113,6 +125,10 @@ export type Dictionary = {
     errorDescription: string;
     retry: string;
     errorCode: string;
+    /** 404 page: points visitors at the header search (⌘K / Ctrl+K). */
+    notFoundSearchHint: string;
+    /** 404 page: heading above the recent-posts list. */
+    notFoundSuggestions: string;
   };
   comments: {
     setup: (keys: string) => string;
@@ -181,6 +197,8 @@ const dictionaries: Record<Locale, Dictionary> = {
       noMatchingPosts: '無符合條件的文章',
       previousPage: '上一頁',
       nextPage: '下一頁',
+      pagination: '文章分頁',
+      goToPage: (page) => `第 ${page} 頁`,
       sidebar: '側邊欄',
       openSidebar: '開啟側邊欄',
       closeSidebar: '關閉側邊欄',
@@ -201,11 +219,19 @@ const dictionaries: Record<Locale, Dictionary> = {
       relatedPosts: '相關文章',
       relatedPostsDescription: '為你挑選相似主題',
       footerCue: '即將展開',
+      skipToContent: '跳至主要內容',
+      updatedOn: '更新於',
+      copyCode: '複製程式碼',
+      codeCopied: '已複製',
+      copyFailed: '複製失敗',
       switchToLight: '切換為淺色主題',
       switchToDark: '切換為深色主題',
       openMenu: '開啟選單',
       closeMenu: '關閉選單',
       navigationMenu: '導覽選單',
+      mainNavigation: '主要導覽',
+      copyright: '© {year} 版權所有',
+      rssFeed: 'RSS 訂閱',
     },
     search: {
       titleMatches: '標題相符',
@@ -246,6 +272,8 @@ const dictionaries: Record<Locale, Dictionary> = {
       errorDescription: '頁面載入時發生問題，請稍後再試。',
       retry: '重試',
       errorCode: '錯誤代碼',
+      notFoundSearchHint: '也可以使用頁首的搜尋（⌘K／Ctrl+K）尋找文章。',
+      notFoundSuggestions: '或許你在找這些文章',
     },
     comments: {
       setup: (keys) => `Giscus 尚未完成設定。請在 .env.local 補齊：${keys}`,
@@ -302,6 +330,8 @@ const dictionaries: Record<Locale, Dictionary> = {
       noMatchingPosts: 'No matching posts',
       previousPage: 'Previous',
       nextPage: 'Next',
+      pagination: 'Post pagination',
+      goToPage: (page) => `Page ${page}`,
       sidebar: 'Sidebar',
       openSidebar: 'Open sidebar',
       closeSidebar: 'Close sidebar',
@@ -322,11 +352,19 @@ const dictionaries: Record<Locale, Dictionary> = {
       relatedPosts: 'Related posts',
       relatedPostsDescription: 'Selected for a similar topic',
       footerCue: 'More below',
+      skipToContent: 'Skip to main content',
+      updatedOn: 'Updated',
+      copyCode: 'Copy code',
+      codeCopied: 'Copied',
+      copyFailed: 'Copy failed',
       switchToLight: 'Switch to light theme',
       switchToDark: 'Switch to dark theme',
       openMenu: 'Open menu',
       closeMenu: 'Close menu',
       navigationMenu: 'Navigation menu',
+      mainNavigation: 'Main navigation',
+      copyright: '© {year} All rights reserved.',
+      rssFeed: 'RSS feed',
     },
     search: {
       titleMatches: 'Title match',
@@ -367,6 +405,8 @@ const dictionaries: Record<Locale, Dictionary> = {
       errorDescription: 'There was a problem loading this page. Please try again later.',
       retry: 'Try again',
       errorCode: 'Error code',
+      notFoundSearchHint: 'You can also search the site from the header (⌘K / Ctrl+K).',
+      notFoundSuggestions: 'Perhaps you were looking for one of these',
     },
     comments: {
       setup: (keys) => `Giscus is not configured. Add these keys to .env.local: ${keys}`,

@@ -78,7 +78,11 @@ function attachViewer(wrapper: HTMLDivElement, viewport: HTMLDivElement) {
   };
 
   // --- Wheel zoom ---
+  // Plain wheel scrolls the page; only Ctrl/⌘ + wheel (and trackpad pinch,
+  // which browsers report as ctrlKey) zooms. In fullscreen there is no page
+  // to scroll, so the plain wheel zooms there.
   const onWheel = (e: WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey && document.fullscreenElement !== wrapper) return;
     e.preventDefault();
     const delta = -e.deltaY * WHEEL_ZOOM_FACTOR;
     const newScale = clampScale(state.scale * (1 + delta * state.scale));

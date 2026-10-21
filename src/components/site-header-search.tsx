@@ -1,17 +1,22 @@
 'use client';
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useCallback, useState } from 'react';
 import { SearchButton } from './search-button';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 // The modal (cmdk + Pagefind client) is code-split out of the header
 // bundle, mirroring the source `next/dynamic(..., { ssr: false })`.
-const SearchModal = lazy(
-  () =>
-    import('./search-modal').then((mod) => ({
-      default: mod.SearchModal,
-    }))
+const loadSearchModal = () => import('./search-modal');
+const SearchModal = lazy(() =>
+  loadSearchModal().then((mod) => ({
+    default: mod.SearchModal,
+  }))
 );
+// Fire-and-forget chunk warm-up on hover/focus intent (module imports are
+// cached, so the later `lazy()` resolve reuses the same request).
+const preloadSearchModal = () => {
+  void loadSearchModal().catch(() => {});
+};
 
 /**
  * Tiny client island for the header search. Keeps the open/close state
@@ -31,20 +36,30 @@ export function SiteHeaderSearch({
   currentPath: string;
 }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // The modal chunk is only requested after the first open (button or
+  // ⌘/Ctrl+K); it then opens itself as soon as the chunk resolves.
+  const [hasOpened, setHasOpened] = useState(false);
+  const openSearch = useCallback(() => {
+    setHasOpened(true);
+    setIsSearchOpen(true);
+  }, []);
+  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
 
   return (
     <>
-      <SearchButton onClick={() => setIsSearchOpen(true)} labels={searchLabels} />
-      <Suspense fallback={null}>
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          recentPosts={recentPosts}
-          labels={searchLabels}
-          errorLabel={errorLabel}
-          currentPath={currentPath}
-        />
-      </Suspense>
+      <SearchButton onClick={openSearch} onPreload={preloadSearchModal} labels={searchLabels} />
+      {hasOpened && (
+        <Suspense fallback={null}>
+          <SearchModal
+            isOpen={isSearchOpen}
+            onClose={closeSearch}
+            recentPosts={recentPosts}
+            labels={searchLabels}
+            errorLabel={errorLabel}
+            currentPath={currentPath}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

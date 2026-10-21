@@ -53,6 +53,11 @@ export default defineConfig({
       defaultColor: false,
     },
   },
+  // Explicit (ClientRouter's implicit default): prefetch every internal link
+  // on hover/focus. 'viewport' would fetch every visible post on list pages
+  // (5+ full article documents per screen) for little gain; Cloudflare Speed
+  // Brain (zone setting) additionally prefetches on pointerdown.
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
@@ -80,17 +85,9 @@ export default defineConfig({
       optimizedFallbacks: false,
       display: 'swap',
     },
-    {
-      provider: fontProviders.google(),
-      name: 'LXGW WenKai TC',
-      cssVariable: '--font-display-cjk',
-      weights: [400, 700],
-      fallbacks: [],
-      optimizedFallbacks: false,
-      // CJK: Astro 7's fonts API self-hosts woff2 under /_astro/fonts/ and
-      // emits an inline @font-face <style> in <head> — no preload <link> is
-      // emitted at all (verified against dist output).
-      display: 'swap',
-    },
+    // LXGW WenKai TC (--font-display-cjk) is NOT configured here: the Fonts
+    // API inlined ~216 unicode-range @font-face rules (~211 KB) into every
+    // page. scripts/build-display-font.mjs builds one heading-only subset
+    // instead; src/lib/display-font.ts + layout.astro emit its @font-face.
   ],
 });

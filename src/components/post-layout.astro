@@ -37,7 +37,7 @@ const { locale, hasToc = true, contentKey, wide = false } = Astro.props;
   </div>
 
   <PostLayoutToc
-    client:load
+    client:idle
     hasToc={hasToc}
     contentKey={contentKey}
     locale={locale}

@@ -6,29 +6,22 @@ import { MobileDrawer } from './mobile-drawer';
 import { useDrawer } from '@/lib/use-drawer';
 import type { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
-import { RightSidebarContent } from './right-sidebar';
+import type { ReactNode } from 'react';
 
 interface SidebarDrawerProps {
-  tags: { tag: string; slug: string; count: number }[];
-  aboutUrl: string;
-  avatarSrc: string;
   locale: Locale;
-  variant?: 'default' | 'reading';
+  /** Server-rendered sidebar content (Astro slot → static HTML). */
+  children?: ReactNode;
 }
 
 /**
  * Island half of the source's `SidebarLayout`: the floating open-sidebar
  * button plus the mobile `MobileDrawer` (lines 43–75 of
  * components/sidebar-layout.tsx). The desktop grid shell is static markup in
- * `sidebar-layout.astro`.
+ * `sidebar-layout.astro`, which also passes the server-rendered sidebar
+ * content in as the slot (so no sidebar markup/data is rebuilt in React).
  */
-export function SidebarDrawer({
-  tags,
-  aboutUrl,
-  avatarSrc,
-  locale,
-  variant = 'default'
-}: SidebarDrawerProps) {
+export function SidebarDrawer({ locale, children }: SidebarDrawerProps) {
   const { open, setOpen, mounted } = useDrawer();
   const dictionary = getDictionary(locale);
 
@@ -43,16 +36,7 @@ export function SidebarDrawer({
         icon={<FiLayout className="h-5 w-5" />}
         closeLabel={dictionary.common.closeSidebar}
       >
-        {open && (
-          <RightSidebarContent
-            tags={tags}
-            aboutUrl={aboutUrl}
-            avatarSrc={avatarSrc}
-            locale={locale}
-            forceLoadFeed
-            variant={variant}
-          />
-        )}
+        {open && children}
       </MobileDrawer>
 
       <button

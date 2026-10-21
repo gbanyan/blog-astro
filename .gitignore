@@ -34,6 +34,9 @@ pnpm-debug.log*
 # Generated assets mirror
 /public/assets
 
+# Generated CJK display-font subset (scripts/build-display-font.mjs)
+/public/fonts
+
 # Generated search index
 /dist/_pagefind
 

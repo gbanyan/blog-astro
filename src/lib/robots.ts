@@ -11,27 +11,27 @@ export interface RobotsRule {
 export interface RobotsMetadata {
   rules: RobotsRule[];
   sitemap: string;
-  host: string;
 }
 
 /**
  * Port of the source `app/robots.ts` `localizedRobots`: open site with
- * `/api/`, `/_next/`, `/admin/` disallowed, plus a strict deny list for
- * known AI crawlers. The `locale` argument is part of the source signature
- * for symmetry; the policy itself is locale-independent.
+ * `/admin/` disallowed, plus the same rule repeated for known AI crawlers.
+ * The Next.js-era `/api/` and `/_next/` disallows are gone (neither path
+ * exists on the static Astro build), as is the non-standard `Host:` line.
+ * The `locale` argument is kept for signature symmetry; the policy itself
+ * is locale-independent.
  */
 export function localizedRobots(
   _locale: Locale,
   sitemapPath: string
 ): RobotsMetadata {
-  const siteUrl = siteConfig.url;
 
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/_next/', '/admin/'],
+        disallow: ['/admin/'],
       },
       {
         userAgent: [
@@ -45,11 +45,10 @@ export function localizedRobots(
           'Cohere-ai',
         ],
         allow: '/',
-        disallow: ['/api/', '/_next/', '/admin/'],
+        disallow: ['/admin/'],
       },
     ],
-    sitemap: `${siteUrl}${sitemapPath}`,
-    host: siteUrl,
+    sitemap: `${siteConfig.url}${sitemapPath}`,
   };
 }
 
@@ -60,8 +59,7 @@ function toArray<T>(value: T | T[] | undefined): T[] {
 
 /**
  * Serializes the way the root `/robots.txt` is emitted by Next.js' robots
- * file convention: capitalized `User-Agent`, `Host` before `Sitemap`,
- * trailing newline.
+ * file convention: capitalized `User-Agent`, trailing newline.
  */
 export function nextRobotsText(metadata: RobotsMetadata): string {
   const lines: string[] = [];
@@ -73,7 +71,6 @@ export function nextRobotsText(metadata: RobotsMetadata): string {
     for (const path of toArray(rule.disallow)) lines.push(`Disallow: ${path}`);
     lines.push('');
   }
-  lines.push(`Host: ${metadata.host}`);
   lines.push(`Sitemap: ${metadata.sitemap}`);
 
   return `${lines.join('\n')}\n`;
@@ -81,8 +78,7 @@ export function nextRobotsText(metadata: RobotsMetadata): string {
 
 /**
  * Serializes the way the source `[locale]/robots.txt` route emits it
- * manually: lowercase `user-agent`, `Sitemap` before `Host`, no trailing
- * newline.
+ * manually: `User-agent` casing, no trailing newline.
  */
 export function localizedRobotsText(metadata: RobotsMetadata): string {
   const lines: string[] = [];
@@ -95,7 +91,6 @@ export function localizedRobotsText(metadata: RobotsMetadata): string {
     lines.push('');
   }
   lines.push(`Sitemap: ${metadata.sitemap}`);
-  lines.push(`Host: ${metadata.host}`);
 
   return lines.join('\n');
 }

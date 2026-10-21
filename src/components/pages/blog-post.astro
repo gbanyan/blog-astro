@@ -9,6 +9,7 @@ import { getTagSlug } from '@/lib/tags';
 import { absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
 import { countWords, estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
 import { socialImageUrl, documentOgUrl } from '@/lib/og';
+import { siteLogoUrl } from '@/lib/seo';
 import PostStorylineNav from '../post-storyline-nav.astro';
 import PostCard from '../post-card.astro';
 import ContentImage from '../content-image.astro';
@@ -16,8 +17,9 @@ import { MermaidRenderer } from '../mermaid-renderer';
 import { GiscusComments } from '../giscus-comments';
 import { FooterCue } from '../footer-cue';
 import { ReadingProgress } from '../reading-progress';
-import { ScrollReveal } from '../scroll-reveal';
+import ScrollReveal from '@/components/scroll-reveal.astro';
 import SectionDividerStatic from '../section-divider-static.astro';
+import CodeCopy from '../code-copy.astro';
 import PostLayout from '../post-layout.astro';
 
 interface Props {
@@ -40,8 +42,18 @@ const postUrl = absoluteUrl(documentPath(post, locale));
 const imageUrl =
   socialImageUrl(post.feature_image) ?? documentOgUrl(post);
 
+// Publish / update dates as ISO (for <time datetime>) and localized labels.
+// The update stamp is shown only when it falls on a different day.
+const publishedDate = post.published_at ? new Date(post.published_at as Date | string) : null;
+const updatedDate = post.updated_at ? new Date(post.updated_at as Date | string) : null;
+const publishedLabel = publishedDate?.toLocaleDateString(docLocale);
+const updatedLabel = updatedDate?.toLocaleDateString(docLocale);
+const showUpdated = Boolean(updatedLabel && publishedLabel && updatedLabel !== publishedLabel);
+
 const wordCount = countWords(post.body?.raw || '');
 const readingMinutes = estimateReadingMinutes(post.body?.raw || '');
+
+const logoUrl = siteLogoUrl();
 
 // BlogPosting Schema
 const blogPostingSchema = {
@@ -60,14 +72,16 @@ const blogPostingSchema = {
   publisher: {
     '@type': 'Organization',
     name: siteConfig.name,
-    logo: {
-      '@type': 'ImageObject',
-      url: `${siteConfig.url}${siteConfig.avatar}`
-    }
+    ...(logoUrl ? { logo: { '@type': 'ImageObject', url: logoUrl } } : {})
   },
   mainEntityOfPage: {
     '@type': 'WebPage',
-    '@id': postUrl
+    '@id': postUrl,
+    // Speakable belongs to the page, not a top-level node (schema.org).
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['article[data-toc-content]', '.prose h2', '.prose h3', '.prose p']
+    }
   },
   ...(post.tags && post.tags.length > 0
     ? { keywords: post.tags.join(', '), articleSection: post.tags[0] }
@@ -75,16 +89,6 @@ const blogPostingSchema = {
   ...(wordCount > 0 ? { wordCount, readingTime: `${readingMinutes} min read` } : {}),
   url: postUrl,
   inLanguage: docLocale
-};
-
-// Speakable Schema for AEO
-const speakableSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'SpeakableSpecification',
-  speakable: {
-    '@type': 'CSSSelector',
-    selector: ['article[data-toc-content]', '.prose h2', '.prose h3', '.prose p']
-  }
 };
 
 // BreadcrumbList Schema
@@ -115,9 +119,8 @@ const breadcrumbSchema = {
 ---
 <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
 <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
-<script type="application/ld+json" set:html={JSON.stringify(speakableSchema)} />
 <ReadingProgress client:idle />
-<ScrollReveal client:load />
+<ScrollReveal />
 <PostLayout
   hasToc={hasToc}
   contentKey={post.slug || post.flattenedPath}
@@ -128,9 +131,16 @@ const breadcrumbSchema = {
     <div data-pagefind-body>
       <SectionDividerStatic>
         <header class="mb-6 space-y-4 text-center">
-          {post.published_at && (
+          {publishedDate && (
             <p class="type-small text-slate-500 dark:text-slate-400">
-              {new Date(post.published_at as Date | string).toLocaleDateString(docLocale)}
+              <time datetime={publishedDate.toISOString()}>{publishedLabel}</time>
+              {showUpdated && updatedDate && (
+                <>
+                  {' · '}
+                  {dictionary.common.updatedOn}{' '}
+                  <time datetime={updatedDate.toISOString()}>{updatedLabel}</time>
+                </>
+              )}
               {' · '}
               {readingTimeLabel(readingMinutes, docLocale)}
             </p>
@@ -162,7 +172,7 @@ const breadcrumbSchema = {
             <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
               <ContentImage
                 src={post.feature_image.replace('../assets', '/assets')}
-                alt={post.title}
+                alt=
                 width={1200}
                 height={600}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
@@ -176,6 +186,7 @@ const breadcrumbSchema = {
             <Content />
           </div>
           {hasMermaid && <MermaidRenderer client:idle labels={dictionary.mermaid} />}
+          <CodeCopy labels={dictionary.common} />
         </article>
       </SectionDividerStatic>
     </div>
@@ -206,7 +217,7 @@ const breadcrumbSchema = {
             </div>
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {relatedPosts.map((related) => (
-                <PostCard post={related} showTags={false} />
+                <PostCard post={related} showTags={false} headingLevel="h3" />
               ))}
             </div>
           </section>

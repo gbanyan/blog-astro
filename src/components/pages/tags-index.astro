@@ -5,7 +5,7 @@ import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import SectionDividerStatic from '@/components/section-divider-static.astro';
-import { ScrollReveal } from '@/components/scroll-reveal';
+import ScrollReveal from '@/components/scroll-reveal.astro';
 
 interface Props {
   locale: Locale;
@@ -123,4 +123,4 @@ const collectionPageSchema = {
     </div>
   </SidebarLayout>
 </section>
-<ScrollReveal client:load />
+<ScrollReveal />

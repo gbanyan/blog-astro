@@ -222,7 +222,7 @@ export function SearchModal({
       onOpenChange={(open) => !open && onClose()}
       label={labels.dialogLabel}
       shouldFilter={false}
-      className="fixed left-1/2 top-[20%] z-[9999] w-full max-w-2xl -translate-x-1/2 rounded-2xl border border-white/40 bg-white/95 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95"
+      className="fixed left-1/2 top-[20%] z-[9999] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-2xl border border-white/40 bg-white/95 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-slate-900/95"
     >
       <div className="flex items-center border-b border-slate-200 px-4 dark:border-slate-700">
         <FiSearch className="size-5 shrink-0 text-slate-400" />
@@ -230,7 +230,7 @@ export function SearchModal({
           value={search}
           onValueChange={setSearch}
           placeholder={labels.inputPlaceholder}
-          className="flex h-14 w-full bg-transparent px-3 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
+          className="flex h-14 w-full bg-transparent px-3 text-base text-slate-900 placeholder:text-slate-500 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-400"
         />
       </div>
 
@@ -258,7 +258,7 @@ export function SearchModal({
                   className={cn(
                     'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors',
                     'data-[selected=true]:bg-slate-100 data-[selected=true]:text-slate-900',
-                    'dark:text-slate-300 dark:data-[selected=true]:bg-slate-800 dark:data-[selected=true]:text-slate-100 dark:hover:text-accent'
+                    'dark:text-slate-300 dark:data-[selected=true]:bg-slate-800 dark:data-[selected=true]:text-slate-100 dark:hover:text-accent-textDark'
                   )}
                 >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
@@ -278,7 +278,7 @@ export function SearchModal({
                     className={cn(
                       'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors',
                       'data-[selected=true]:bg-slate-100 data-[selected=true]:text-slate-900',
-                      'dark:text-slate-300 dark:data-[selected=true]:bg-slate-800 dark:data-[selected=true]:text-slate-100 dark:hover:text-accent'
+                      'dark:text-slate-300 dark:data-[selected=true]:bg-slate-800 dark:data-[selected=true]:text-slate-100 dark:hover:text-accent-textDark'
                     )}
                   >
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
@@ -316,7 +316,7 @@ export function SearchModal({
                   onSelect={() => handleSelect(result.url)}
                   className={cn(
                     'flex cursor-pointer flex-col gap-0.5 rounded-lg px-3 py-2.5 outline-none transition-colors',
-                    'data-[selected=true]:bg-slate-100 dark:data-[selected=true]:bg-slate-800 dark:hover:text-accent'
+                    'data-[selected=true]:bg-slate-100 dark:data-[selected=true]:bg-slate-800 dark:hover:text-accent-textDark'
                   )}
                 >
                   <span className="flex items-center gap-2">

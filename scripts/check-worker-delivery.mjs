@@ -27,12 +27,15 @@ for (const path of ['/blog/ai-taste-llm-data-shadow', '/en/blog/ai-taste-llm-dat
 
 const html = await (await request('/blog/ai-taste-llm-data-shadow')).text();
 const font = html.match(/\/_astro\/fonts\/[\w.-]+\.woff2/)?.[0];
+// Build-time CJK heading subset (scripts/build-display-font.mjs), zh-TW only.
+const displayFont = html.match(/\/fonts\/lxgw-wenkai-tc-\d+-[a-f0-9]+\.woff2/)?.[0];
 const image = html.match(/\/_astro\/ai-taste-llm-data-shadow\.[\w.-]+\.webp/)?.[0];
 assert.ok(font, 'page should reference a self-hosted font');
+assert.ok(displayFont, 'zh-TW page should reference the CJK display-font subset');
 assert.ok(image, 'cover should use a build-time optimized image');
 assert.match(html, /srcset="[^"]+480w[^"]+1200w/, 'cover needs responsive variants');
 
-for (const path of [font, image]) {
+for (const path of [font, displayFont, image]) {
   const response = await request(path);
   assert.equal(response.status, 200, path);
   assert.equal(response.headers.get('cache-control'), immutable, path);
@@ -60,4 +63,16 @@ for (const [directory, extension] of [['index', 'pf_index'], ['fragment', 'pf_fr
 for (const path of ['/delivery-check-does-not-exist', '/_astro/delivery-check-does-not-exist.js']) {
   assert.equal((await request(path)).status, 404, `${path} must not fall through to the old origin or homepage`);
 }
+for (const [path, lang] of [['/delivery-check-does-not-exist', 'zh-TW'], ['/en/delivery-check-does-not-exist', 'en']]) {
+  const body = await (await request(path)).text();
+  assert.match(body, new RegExp(`<html lang="${lang}"`), `${path} should get the ${lang} 404 page`);
+}
+for (const path of ['/llms.txt', '/en/llms.txt', '/ai.txt']) {
+  const response = await request(path);
+  assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8', path);
+  await response.arrayBuffer();
+}
+const security = (await request('/')).headers;
+assert.equal(security.get('referrer-policy'), 'strict-origin-when-cross-origin');
+assert.equal(security.get('x-frame-options'), 'SAMEORIGIN');
 console.log(`Delivery checks passed: ${origin} (canonical routes, responsive images, cache policies, real 404s).`);

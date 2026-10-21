@@ -9,6 +9,15 @@ import {
 // so fall back to an empty object and let the defaults below apply.
 const env = (import.meta.env ?? {}) as Record<string, string | undefined>;
 
+/**
+ * Site-wide default social card: the build-time satori card emitted by
+ * `src/pages/og/[...slug].png.ts` (`/og/index/<locale>.png`). Set
+ * PUBLIC_OG_DEFAULT_IMAGE only to point at an image that actually exists;
+ * `defaultOgImage()` in og.ts picks the per-locale card when no override is
+ * configured or the override's file is missing (`check-assets` warns).
+ */
+export const DEFAULT_OG_IMAGE = '/og/index/zh-TW.png';
+
 export const siteConfig = {
   name: env.PUBLIC_SITE_NAME || 'Your Name',
   title: env.PUBLIC_SITE_TITLE || 'Your Personal Site',
@@ -36,7 +45,7 @@ export const siteConfig = {
     accentTextLight: env.PUBLIC_COLOR_ACCENT_TEXT_LIGHT || '#6d28d9',
     accentTextDark: env.PUBLIC_COLOR_ACCENT_TEXT_DARK || '#c4b5fd'
   },
-  ogImage: env.PUBLIC_OG_DEFAULT_IMAGE || '/assets/og-default.png',
+  ogImage: env.PUBLIC_OG_DEFAULT_IMAGE || DEFAULT_OG_IMAGE,
   twitterCard:
     (env.PUBLIC_TWITTER_CARD_TYPE as 'summary' | 'summary_large_image' | undefined) ||
     'summary_large_image',

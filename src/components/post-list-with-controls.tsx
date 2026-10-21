@@ -1,129 +1,146 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import type { Post } from '@/lib/content';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FiArrowDown, FiArrowUp, FiSearch, FiList } from 'react-icons/fi';
 import { siteConfig } from '@/lib/config';
+import {
+  matchesPostQuery,
+  paginationItems,
+  readPostListUrlState,
+  sortPostEntries,
+  writePostListUrlState,
+  type PostListEntry,
+  type PostListUrlState,
+  type PostSortOrder,
+} from '@/lib/post-list';
 import { PostListItem } from './post-list-item';
 import { TimelineWrapper } from './timeline-wrapper';
 import type { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 
 interface Props {
-  posts: Post[];
+  posts: PostListEntry[];
   pageSize?: number;
   locale: Locale;
   initialSearch?: string;
 }
 
-type SortOrder = 'new' | 'old';
-
 export function PostListWithControls({ posts, pageSize, locale, initialSearch = '' }: Props) {
   const labels = getDictionary(locale).common;
-  const [sortOrder, setSortOrder] = useState<SortOrder>('new');
+  const [sortOrder, setSortOrder] = useState<PostSortOrder>('new');
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const listTopRef = useRef<HTMLDivElement>(null);
 
-  // Deep links (`/blog?q=...`) are client-side: static prerender can't read
-  // the query param, so seed the search box from the URL at mount.
+  // List state lives in the URL (`?q=&sort=old&page=2`). The static prerender
+  // can't read query params, so the server/first client render use defaults
+  // and the URL state is applied after mount (no hydration mismatch). Page
+  // changes push history entries; Back/Forward re-sync from the URL.
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get('q');
-    if (q) setSearchTerm(q);
-  }, []);
+    const applyUrlState = () => {
+      const state = readPostListUrlState(window.location.search);
+      setSearchTerm(state.q || initialSearch);
+      setSortOrder(state.sort);
+      setPage(state.page);
+    };
+    applyUrlState();
+    window.addEventListener('popstate', applyUrlState);
+    return () => window.removeEventListener('popstate', applyUrlState);
+  }, [initialSearch]);
 
   const size = pageSize ?? siteConfig.postsPerPage ?? 5;
 
   const normalizedQuery = searchTerm.trim().toLowerCase();
 
-  const filteredPosts = useMemo(() => {
-    if (!normalizedQuery) return posts;
+  const filteredPosts = useMemo(
+    () => posts.filter((post) => matchesPostQuery(post, normalizedQuery)),
+    [posts, normalizedQuery]
+  );
 
-    return posts.filter((post) => {
-      const haystack = [
-        post.title,
-        post.description,
-        post.custom_excerpt,
-        post.tags?.join(' ')
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(normalizedQuery);
-    });
-  }, [posts, normalizedQuery]);
-
-  const sortedPosts = useMemo(() => {
-    const arr = [...filteredPosts];
-    arr.sort((a, b) => {
-      const aDate = a.published_at
-        ? new Date(a.published_at).getTime()
-        : 0;
-      const bDate = b.published_at
-        ? new Date(b.published_at).getTime()
-        : 0;
-      return sortOrder === 'new' ? bDate - aDate : aDate - bDate;
-    });
-    return arr;
-  }, [filteredPosts, sortOrder]);
+  const sortedPosts = useMemo(
+    () => sortPostEntries(filteredPosts, sortOrder),
+    [filteredPosts, sortOrder]
+  );
 
   const totalPages = Math.max(1, Math.ceil(sortedPosts.length / size));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * size;
   const currentPosts = sortedPosts.slice(start, start + size);
 
-  const handleChangeSort = (order: SortOrder) => {
+  const writeUrl = (next: PostListUrlState, mode: 'push' | 'replace') => {
+    const target = writePostListUrlState(window.location.href, next);
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (target === current) return;
+    if (mode === 'push') {
+      // A null-state entry: Astro's ClientRouter ignores popstate between
+      // such entries, and our popstate listener re-syncs the list.
+      window.history.pushState(null, '', target);
+    } else {
+      window.history.replaceState(window.history.state, '', target);
+    }
+  };
+
+  const handleChangeSort = (order: PostSortOrder) => {
     setSortOrder(order);
     setPage(1);
+    writeUrl({ q: searchTerm, sort: order, page: 1 }, 'replace');
   };
 
   const updateSearchTerm = (value: string) => {
     setSearchTerm(value);
     setPage(1);
-
-    const url = new URL(window.location.href);
-    if (value.trim()) {
-      url.searchParams.set('q', value);
-    } else {
-      url.searchParams.delete('q');
-    }
-    window.history.replaceState(
-      window.history.state,
-      '',
-      `${url.pathname}${url.search}${url.hash}`
-    );
+    writeUrl({ q: value, sort: sortOrder, page: 1 }, 'replace');
   };
 
   const goToPage = (p: number) => {
-    if (p < 1 || p > totalPages) return;
+    if (p < 1 || p > totalPages || p === currentPage) return;
     setPage(p);
+    writeUrl({ q: searchTerm, sort: sortOrder, page: p }, 'push');
+
+    // Bring the new page into view and move focus to the list top so keyboard
+    // and screen-reader users land on the new results.
+    const target = listTopRef.current;
+    if (target) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (target.getBoundingClientRect().top < 0) {
+        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      }
+      target.focus({ preventScroll: true });
+    }
   };
 
+  const sortButtonClass = (active: boolean) =>
+    `inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition duration-180 ease-snappy ${active
+      ? 'bg-accent text-white'
+      : 'bg-white text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700'
+    }`;
+
   return (
-    <div className="space-y-4">
+    <div
+      ref={listTopRef}
+      tabIndex={-1}
+      className="scroll-mt-24 space-y-4 focus:outline-none"
+    >
       <div className="flex flex-col gap-4 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/70 px-2 py-1 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-          <FiList className="h-3.5 w-3.5" />
+          <FiList className="h-3.5 w-3.5" aria-hidden="true" />
           <span>{labels.sort}</span>
           <button
             type="button"
             onClick={() => handleChangeSort('new')}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition duration-180 ease-snappy ${sortOrder === 'new'
-              ? 'bg-blue-600 text-white dark:bg-blue-600'
-              : 'bg-white text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700'
-              }`}
+            aria-pressed={sortOrder === 'new'}
+            className={sortButtonClass(sortOrder === 'new')}
           >
-            <FiArrowDown className="h-3 w-3" />
+            <FiArrowDown className="h-3 w-3" aria-hidden="true" />
             {labels.newest}
           </button>
           <button
             type="button"
             onClick={() => handleChangeSort('old')}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition duration-180 ease-snappy ${sortOrder === 'old'
-              ? 'bg-blue-600 text-white dark:bg-blue-600'
-              : 'bg-white text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-700'
-              }`}
+            aria-pressed={sortOrder === 'old'}
+            className={sortButtonClass(sortOrder === 'old')}
           >
-            <FiArrowUp className="h-3 w-3" />
+            <FiArrowUp className="h-3 w-3" aria-hidden="true" />
             {labels.oldest}
           </button>
         </div>
@@ -134,6 +151,7 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
           <div className="relative w-full sm:w-64">
             <FiSearch
               className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
             />
             <input
               id="post-search"
@@ -148,7 +166,7 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
       </div>
 
       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-        <p>
+        <p aria-live="polite">
           {labels.pageStatus(currentPage, totalPages, sortedPosts.length)}
           {normalizedQuery && ` ${labels.searchStatus(searchTerm)}`}
         </p>
@@ -156,7 +174,7 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
           <button
             type="button"
             onClick={() => updateSearchTerm('')}
-            className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+            className="text-accent-textLight underline-offset-2 hover:underline dark:text-accent-textDark"
           >
             {labels.clearSearch}
           </button>
@@ -170,32 +188,43 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
       ) : (
         <TimelineWrapper className="space-y-3">
           {currentPosts.map((post) => (
-            <PostListItem key={post._id} post={post} />
+            <PostListItem key={post.id} post={post} />
           ))}
         </TimelineWrapper>
       )}
 
       {totalPages > 1 && currentPosts.length > 0 && (
-        <nav className="flex items-center justify-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+        <nav
+          aria-label={labels.pagination}
+          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-slate-600 dark:text-slate-300"
+        >
           <button
             type="button"
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="rounded border border-slate-200 px-2 py-1 disabled:opacity-40 dark:border-slate-700"
+            className="min-h-[44px] rounded border border-slate-200 px-3 transition-colors duration-180 ease-snappy hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:hover:bg-slate-800"
           >
             {labels.previousPage}
           </button>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const p = i + 1;
+          <div className="order-first flex w-full items-center justify-center gap-1 sm:order-none sm:w-auto">
+            {paginationItems(currentPage, totalPages).map((p, i) => {
+              if (p === null) {
+                return (
+                  <span key={`gap-${i}`} className="w-6 text-center text-slate-400" aria-hidden="true">
+                    …
+                  </span>
+                );
+              }
               const isActive = p === currentPage;
               return (
                 <button
                   key={p}
                   type="button"
                   onClick={() => goToPage(p)}
-                  className={`h-7 w-7 rounded text-xs ${isActive
-                    ? 'bg-blue-600 text-white dark:bg-blue-600'
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-label={labels.goToPage(p)}
+                  className={`h-[44px] min-w-[44px] rounded px-1 text-xs transition-colors duration-180 ease-snappy ${isActive
+                    ? 'bg-accent text-white'
                     : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                 >
@@ -208,7 +237,7 @@ export function PostListWithControls({ posts, pageSize, locale, initialSearch = 
             type="button"
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="rounded border border-slate-200 px-2 py-1 disabled:opacity-40 dark:border-slate-700"
+            className="min-h-[44px] rounded border border-slate-200 px-3 transition-colors duration-180 ease-snappy hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent dark:border-slate-700 dark:hover:bg-slate-800"
           >
             {labels.nextPage}
           </button>

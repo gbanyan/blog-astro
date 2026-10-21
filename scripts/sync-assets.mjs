@@ -19,6 +19,11 @@ async function syncAssets() {
 
   await cp(sourceDir, targetDir, { recursive: true, force: true });
   console.info('sync-assets: copied content/assets → public/assets.');
+
+  // Responsive WebP variants for inline Markdown images (see content-image-variants.ts).
+  const { generateInlineImageVariants } = await import('../src/lib/content-image-variants.ts');
+  const count = await generateInlineImageVariants(path.join(root, 'content'), targetDir);
+  console.info(`sync-assets: generated ${count} responsive WebP variants.`);
 }
 
 syncAssets().catch((error) => {

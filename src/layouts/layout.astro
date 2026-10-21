@@ -6,7 +6,8 @@
  *
  * Ported from blog-nextjs `app/[locale]/layout.tsx`:
  *   - Next `generateMetadata`  → head tags rendered from `HeadModel`
- *   - `next/font/google`       → `<Font cssVariable>` (configured in astro.config.mjs)
+ *   - `next/font/google`       → `<Font cssVariable>` (Latin, astro.config.mjs) +
+ *                                build-time CJK subset (src/lib/display-font.ts)
  *   - `next-themes` provider   → THEME_INIT_SNIPPET + `useTheme` (Task 5)
  *   - `NextTopLoader`          → `<ClientRouter />` (astro:transitions)
  *   - `JsonLd` component       → inline `<script type="application/ld+json">`
@@ -18,7 +19,8 @@ import { Font } from 'astro:assets';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { siteConfig } from '@/lib/config';
 import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
-import type { HeadModel } from '@/lib/seo';
+import { siteLogoUrl, type HeadModel } from '@/lib/seo';
+import { displayFontCss, displayFontPreloads, getDisplayFont } from '@/lib/display-font';
 import { THEME_INIT_SNIPPET } from '@/lib/theme';
 import '../styles/globals.css';
 
@@ -54,12 +56,13 @@ const websiteSchema = {
   },
 };
 
+const logo = siteLogoUrl();
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: siteConfig.name,
   url: siteConfig.url,
-  logo: `${siteConfig.url}${siteConfig.avatar}`,
+  ...(logo ? { logo } : {}),
   sameAs: [
     siteConfig.social.github,
     siteConfig.social.twitter && `https://twitter.com/${siteConfig.social.twitter.replace('@', '')}`,
@@ -85,6 +88,13 @@ let twitterImage = head.twitter.images[0];
 if (twitterImage && !/^https?:\/\//.test(twitterImage)) {
   twitterImage = absoluteUrl(twitterImage);
 }
+
+// CJK display font: one build-time subset (scripts/build-display-font.mjs)
+// instead of the Fonts API's ~216 inline unicode-range slices. English pages
+// skip the preload; the coarse unicode-range keeps them from downloading it.
+const displayFont = getDisplayFont();
+const displayFontStyle = displayFontCss(displayFont);
+const displayFontPreload = locale === 'zh-TW' ? displayFontPreloads(displayFont) : [];
 
 const accentCss = `:root {
   --color-accent: ${theme.accent};
@@ -151,7 +161,12 @@ const fullTitle =
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <Font cssVariable="--font-display-latin" />
-    <Font cssVariable="--font-display-cjk" />
+    {
+      displayFontPreload.map((href) => (
+        <link rel="preload" as="font" type="font/woff2" href={href} crossorigin />
+      ))
+    }
+    <style set:html={displayFontStyle} />
 
     <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />

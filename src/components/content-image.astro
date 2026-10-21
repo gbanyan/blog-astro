@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
 import type { HTMLAttributes } from 'astro/types';
+import { contentImageSize, loadContentImage, normalizeContentAssetSrc } from '@/lib/content-images';
 
 interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'height'> {
   src: string;
@@ -12,20 +12,19 @@ interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'h
 }
 
 // Source images stay in the content submodule; Astro generates hashed WebP
-// variants during the build, with no image service or Worker execution cost.
-const images = import.meta.glob<{ default: ImageMetadata }>(
-  '/content/assets/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG}'
-);
+// variants during the build. The intrinsic size comes from disk, never from
+// the imported metadata object — touching its properties would mark the
+// original as referenced and keep it in `_astro/` (see content-images.ts).
 const { src, alt, width, height, widths = [480, 800, 1200, 1600], ...attributes } = Astro.props;
-const normalized = src.replace(/^\.\.\/assets\//, '/assets/');
-const load = images[`/content${normalized}`];
-const image = load ? (await load()).default : undefined;
-const outputWidth = image ? Math.min(width, image.width) : width;
-const outputWidths = image
-  ? [...new Set([...widths.filter((w) => w <= image.width), outputWidth])].sort((a, b) => a - b)
+const normalized = normalizeContentAssetSrc(src);
+const image = await loadContentImage(normalized);
+const size = image ? contentImageSize(normalized) : undefined;
+const outputWidth = size ? Math.min(width, size.width) : width;
+const outputWidths = size
+  ? [...new Set([...widths.filter((w) => w <= size.width), outputWidth])].sort((a, b) => a - b)
   : [];
 ---
-{image ? (
+{image && size ? (
   <Image
     src={image}
     alt={alt}

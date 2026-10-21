@@ -93,7 +93,7 @@ export function MobileDrawer({
             type="button"
             onClick={onClose}
             data-dialog-initial-focus
-            className="rounded-full p-1 text-slate-500 hover:bg-slate-100 hover:text-accent dark:hover:bg-slate-800 dark:hover:text-accent"
+            className="-my-[9px] -mr-[9px] inline-flex h-[44px] w-[44px] items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-accent-textDark"
             aria-label={closeLabel}
           >
             <FiX className="h-5 w-5" aria-hidden="true" />

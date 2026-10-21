@@ -169,3 +169,33 @@ export async function fetchStatuses(
     return [];
   }
 }
+
+let buildTimeAccountId: Promise<string | null> | undefined;
+
+/**
+ * Resolve the configured profile's account id once per build (server side)
+ * so the client feed can skip the `accounts/lookup` round-trip and request
+ * statuses directly. Best-effort: any failure (no network in the build
+ * environment, timeout, unknown account) resolves to `null`, and the island
+ * falls back to the runtime lookup.
+ */
+export function getBuildTimeMastodonAccountId(profileUrl: string | undefined): Promise<string | null> {
+  if (!profileUrl) return Promise.resolve(null);
+  buildTimeAccountId ??= (async () => {
+    const parsed = parseMastodonUrl(profileUrl);
+    if (!parsed) return null;
+    try {
+      const response = await fetch(
+        `https://${parsed.instance}/api/v1/accounts/lookup?acct=${encodeURIComponent(parsed.username)}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (!response.ok) return null;
+      const account = (await response.json()) as { id?: unknown };
+      return typeof account.id === 'string' && /^\d+$/.test(account.id) ? account.id : null;
+    } catch (error) {
+      console.warn('[mastodon] build-time account lookup failed; falling back to runtime lookup:', error);
+      return null;
+    }
+  })();
+  return buildTimeAccountId;
+}

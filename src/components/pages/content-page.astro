@@ -6,13 +6,14 @@ import type { Locale } from '@/lib/locales';
 import { getDocumentLocale, absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
 import { siteConfig } from '@/lib/config';
 import { getTagSlug } from '@/lib/tags';
-import { socialImageUrl } from '@/lib/og';
+import { socialImageUrl, documentOgUrl } from '@/lib/og';
 import { MermaidRenderer } from '../mermaid-renderer';
 import { ReadingProgress } from '../reading-progress';
-import { ScrollReveal } from '../scroll-reveal';
+import ScrollReveal from '@/components/scroll-reveal.astro';
 import { DevEnvDeviceHero } from '../dev-env-device-hero';
 import { HomeLabDeviceHero } from '../homelab-device-hero';
 import SectionDividerStatic from '../section-divider-static.astro';
+import CodeCopy from '../code-copy.astro';
 import PostLayout from '../post-layout.astro';
 import ContentImage from '../content-image.astro';
 
@@ -26,10 +27,14 @@ interface Props {
 
 const { page, locale, dictionary, hasToc, Content } = Astro.props;
 
+// Only ship the (heavy) Mermaid island when the page has a diagram — same
+// detection as the blog post route.
+const hasMermaid = /data-language="mermaid"|language-mermaid/.test(page.body?.html ?? '');
+
 // Declarative layout/hero metadata — no slug string-matching.
 const isDevice = page.layout === 'device';
 const pageUrl = absoluteUrl(documentPath(page, locale));
-const imageUrl = socialImageUrl(page.feature_image) ?? `${siteConfig.url}${siteConfig.ogImage}`;
+const imageUrl = socialImageUrl(page.feature_image) ?? documentOgUrl(page);
 
 // WebPage Schema
 const webPageSchema = {
@@ -53,7 +58,7 @@ const slug = page.slug || page.flattenedPath;
 ---
 <script type="application/ld+json" set:html={JSON.stringify(webPageSchema)} />
 <ReadingProgress client:idle />
-<ScrollReveal client:load />
+<ScrollReveal />
 <PostLayout hasToc={hasToc} contentKey={slug} wide={isDevice} locale={locale}>
   <div class={isDevice ? 'space-y-4' : 'space-y-8'}>
     <!-- Main content area for Pagefind indexing -->
@@ -62,9 +67,11 @@ const slug = page.slug || page.flattenedPath;
         <header class={isDevice ? 'mb-4 space-y-3 text-center' : 'mb-6 space-y-4 text-center'}>
           {page.published_at && (
             <p class="type-small text-slate-500 dark:text-slate-400">
-              {new Date(page.published_at as Date | string).toLocaleDateString(
-                getDocumentLocale(page)
-              )}
+              <time datetime={new Date(page.published_at as Date | string).toISOString()}>
+                {new Date(page.published_at as Date | string).toLocaleDateString(
+                  getDocumentLocale(page)
+                )}
+              </time>
             </p>
           )}
           <h1 class="type-display font-bold leading-tight text-slate-900 dark:text-slate-50">
@@ -99,7 +106,7 @@ const slug = page.slug || page.flattenedPath;
               <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
                 <ContentImage
                   src={page.feature_image.replace('../assets', '/assets')}
-                  alt={page.title}
+                  alt=""
                   width={1200}
                   height={600}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
@@ -113,7 +120,8 @@ const slug = page.slug || page.flattenedPath;
           <div>
             <Content />
           </div>
-          <MermaidRenderer client:idle labels={dictionary.mermaid} />
+          {hasMermaid && <MermaidRenderer client:idle labels={dictionary.mermaid} />}
+          <CodeCopy labels={dictionary.common} />
         </article>
       </SectionDividerStatic>
     </div>

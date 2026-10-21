@@ -1,5 +1,19 @@
+# Security headers for every response. Cloudflare merges headers from all
+# matching rules (same header twice = comma-joined), so this rule must never
+# set Cache-Control; the path rules below own caching. HSTS and
+# X-Content-Type-Options: nosniff come from the zone's security header setting.
+/*
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: SAMEORIGIN
+
 # Astro fingerprints these files (JS, CSS, fonts, optimized images).
 /_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Build-time CJK display-font subset; the filename carries a content hash
+# (scripts/build-display-font.mjs).
+/fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
 # These URLs can change content between deployments. Revalidate with ETags.
@@ -16,3 +30,20 @@
 
 /_pagefind/fragment/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Static endpoints cannot set response headers; the inferred `text/plain`
+# has no charset and these files contain CJK text.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/en/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/ai.txt
+  Content-Type: text/plain; charset=utf-8
+
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+
+/en/robots.txt
+  Content-Type: text/plain; charset=utf-8

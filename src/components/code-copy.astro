@@ -1,0 +1,129 @@
+---
+/**
+ * Code block chrome without a React island: wraps each Shiki `pre.astro-code`
+ * inside `.prose` in a positioned `.code-block` container and adds a
+ * language label (from Shiki's `data-language`) plus a copy button. The
+ * wrapper — not the scrolling <pre> — anchors the toolbar, so it stays put
+ * while wide code scrolls horizontally. Mermaid sources are left alone
+ * (mermaid-renderer replaces them). Labels arrive via data attributes on a
+ * hidden element so the script stays locale-agnostic; it re-runs on
+ * `astro:page-load` for ClientRouter navigations.
+ */
+interface Props {
+  labels: {
+    copyCode: string;
+    codeCopied: string;
+    copyFailed: string;
+  };
+}
+
+const { labels } = Astro.props;
+---
+<span
+  hidden
+  data-code-copy-labels
+  data-copy={labels.copyCode}
+  data-copied={labels.codeCopied}
+  data-failed={labels.copyFailed}
+></span>
+
+<script>
+  // Shiki's own placeholder language names carry no information.
+  const PLAIN_LANGS = new Set(['', 'plaintext', 'text', 'txt', 'plain']);
+  const COPY_ICON =
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const CHECK_ICON =
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  async function writeClipboard(text: string) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    // Fallback for non-secure contexts / older browsers.
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    if (!ok) throw new Error('copy failed');
+  }
+
+  function enhance() {
+    const source = document.querySelector<HTMLElement>('[data-code-copy-labels]');
+    if (!source) return;
+    const copyLabel = source.dataset.copy ?? 'Copy code';
+    const copiedLabel = source.dataset.copied ?? 'Copied';
+    const failedLabel = source.dataset.failed ?? 'Copy failed';
+
+    const blocks = document.querySelectorAll<HTMLPreElement>(
+      '.prose pre.astro-code:not([data-language="mermaid"])'
+    );
+    blocks.forEach((pre) => {
+      if (pre.parentElement?.classList.contains('code-block')) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'code-block';
+      pre.replaceWith(wrapper);
+      wrapper.appendChild(pre);
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'code-block-toolbar';
+
+      const lang = (pre.dataset.language ?? '').toLowerCase();
+      if (!PLAIN_LANGS.has(lang)) {
+        const label = document.createElement('span');
+        label.className = 'code-block-lang';
+        label.textContent = lang;
+        toolbar.appendChild(label);
+      }
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'code-block-copy';
+      button.innerHTML = COPY_ICON;
+      button.setAttribute('aria-label', copyLabel);
+      button.title = copyLabel;
+
+      // Polite live region so screen readers hear the result.
+      const status = document.createElement('span');
+      status.className = 'sr-only';
+      status.setAttribute('role', 'status');
+
+      let resetId: number | undefined;
+      button.addEventListener('click', async () => {
+        const code = pre.querySelector('code')?.innerText ?? pre.innerText;
+        let ok = true;
+        try {
+          await writeClipboard(code.replace(/\n$/, ''));
+        } catch {
+          ok = false;
+        }
+        const message = ok ? copiedLabel : failedLabel;
+        button.dataset.state = ok ? 'copied' : 'failed';
+        button.innerHTML = ok ? CHECK_ICON : COPY_ICON;
+        button.setAttribute('aria-label', message);
+        button.title = message;
+        status.textContent = message;
+        window.clearTimeout(resetId);
+        resetId = window.setTimeout(() => {
+          delete button.dataset.state;
+          button.innerHTML = COPY_ICON;
+          button.setAttribute('aria-label', copyLabel);
+          button.title = copyLabel;
+          status.textContent = '';
+        }, 2000);
+      });
+
+      toolbar.append(button, status);
+      // Toolbar precedes the code so Tab order reads label → copy → code.
+      wrapper.prepend(toolbar);
+    });
+  }
+
+  document.addEventListener('astro:page-load', enhance);
+</script>

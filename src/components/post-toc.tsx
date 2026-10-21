@@ -118,8 +118,9 @@ export function PostToc({
     const el = document.getElementById(id);
     if (!el) return;
 
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollIntoView({
-      behavior: 'smooth',
+      behavior: reduceMotion ? 'auto' : 'smooth',
       block: 'start'
     });
 
@@ -140,6 +141,12 @@ export function PostToc({
     if (onLinkClick) {
       onLinkClick();
     }
+
+    // Move keyboard/screen-reader focus to the target heading so the next
+    // Tab continues from there (headings are not focusable by default).
+    // Deferred a frame so a closing drawer's focus restore runs first.
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+    requestAnimationFrame(() => el.focus({ preventScroll: true }));
   };
 
   if (items.length === 0) return null;
@@ -176,10 +183,11 @@ export function PostToc({
               <a
                 href={`#${item.id}`}
                 onClick={handleClick(item.id)}
-                className={`line-clamp-2 inline-flex items-center py-1 pl-2 hover:text-blue-600 dark:hover:text-blue-400 ${item.id === activeId
-                    ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                className={`line-clamp-2 inline-flex items-center py-1 pl-2 hover:text-accent-textLight dark:hover:text-accent-textDark ${item.id === activeId
+                    ? 'text-accent-textLight dark:text-accent-textDark font-semibold'
                     : ''
                   }`}
+                aria-current={item.id === activeId ? 'location' : undefined}
               >
                 {item.text}
               </a>

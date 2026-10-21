@@ -1,35 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+import {
+  applyTheme,
+  getStoredTheme,
+  setThemePreference,
+  THEME_CHANGE_EVENT,
+  type ResolvedTheme,
+  type ThemePreference,
+} from './theme-dom';
 
-const STORAGE_KEY = 'theme';
-export const THEME_CHANGE_EVENT = 'omp-theme-change';
-
-export function getStoredTheme(): ThemePreference {
-  if (typeof window === 'undefined') return 'system';
-  try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return value === 'light' || value === 'dark' ? value : 'system';
-  } catch {
-    return 'system';
-  }
-}
-
-export function resolveTheme(preference: ThemePreference): ResolvedTheme {
-  return preference === 'system'
-    ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light'
-    : preference;
-}
-
-export function applyTheme(preference: ThemePreference): ResolvedTheme {
-  const resolved = resolveTheme(preference);
-  document.documentElement.classList.toggle('dark', resolved === 'dark');
-  document.documentElement.dataset.theme = resolved;
-  return resolved;
-}
+export {
+  applyTheme,
+  getStoredTheme,
+  resolveTheme,
+  setThemePreference,
+  THEME_CHANGE_EVENT,
+  type ResolvedTheme,
+  type ThemePreference,
+} from './theme-dom';
 
 /**
  * Inline script for the layout <head>: applies the stored/system theme
@@ -84,13 +72,7 @@ export function useTheme(): {
   }, []);
 
   const setTheme = useCallback((preference: ThemePreference) => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, preference);
-    } catch {
-      // Private-mode storage failures still apply the theme for the session.
-    }
-    applyTheme(preference);
-    window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, { detail: preference }));
+    setThemePreference(preference);
   }, []);
 
   return { theme, resolvedTheme, setTheme };

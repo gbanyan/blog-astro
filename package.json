@@ -11,13 +11,15 @@
     "safari 16.4"
   ],
   "scripts": {
-    "predev": "npm run sync-assets",
+    "predev": "npm run sync-assets && npm run build-display-font",
     "dev": "astro dev",
-    "build": "npm run sync-assets && npm run check-i18n-content && npm run check-assets && astro build && npx pagefind --site dist --output-path dist/_pagefind",
+    "build": "npm run sync-assets && npm run check-i18n-content && npm run check-assets && npm run build-display-font && astro build && npm run finalize-dist && npx pagefind --site dist --output-path dist/_pagefind",
     "preview": "astro preview",
     "check-i18n": "node scripts/check-i18n.mjs --adapter scripts/i18n-validation-adapter.mjs",
     "check-i18n-content": "node scripts/check-i18n-content.mjs",
     "sync-assets": "node scripts/sync-assets.mjs",
+    "build-display-font": "node scripts/build-display-font.mjs",
+    "finalize-dist": "node scripts/finalize-dist.mjs",
     "check-assets": "node scripts/check-assets.mjs",
     "lint": "eslint .",
     "test": "vitest run",
@@ -42,6 +44,7 @@
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "satori": "^0.33.4",
+    "sharp": "^0.35.4",
     "tailwind-merge": "^3.6.0",
     "unist-util-visit": "^5.0.0"
   },

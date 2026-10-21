@@ -1,0 +1,52 @@
+---
+/**
+ * Static theme toggle. Server-rendered so it occupies its slot from first
+ * paint (the former React island returned null until mounted → layout
+ * shift). The visible icon and the accessible name follow the `dark` class
+ * on <html> via CSS `dark:` variants, so there is no flash and no hydration;
+ * a tiny delegated script flips the preference with the same contract as
+ * `useTheme().setTheme` (localStorage `theme` + `omp-theme-change` event,
+ * which React consumers such as mermaid-renderer / giscus-comments listen to).
+ */
+import { FiMoon, FiSun } from 'react-icons/fi';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+
+interface Props {
+  labels: Pick<Dictionary['common'], 'switchToLight' | 'switchToDark'>;
+}
+
+const { labels } = Astro.props;
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-accent-textLight transition-all duration-300 ease-out-quarter before:absolute before:-inset-1.5 before:rounded-full before:content-[''] hover:-translate-y-1 hover:scale-110 hover:bg-accent-soft hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-accent-textDark dark:hover:bg-accent-soft dark:hover:text-accent-textDark"
+>
+  <span class="sr-only dark:hidden">{labels.switchToDark}</span>
+  <span class="sr-only hidden dark:inline">{labels.switchToLight}</span>
+  <FiMoon className="h-4 w-4 rotate-180 text-blue-500 transition-all duration-500 ease-out-expo dark:hidden" aria-hidden="true" />
+  <FiSun className="hidden h-4 w-4 rotate-0 text-amber-400 transition-all duration-500 ease-out-expo dark:block" aria-hidden="true" />
+</button>
+
+<script>
+  import { applyTheme, getStoredTheme, setThemePreference } from '@/lib/theme-dom';
+
+  // Module scripts run once per full page load; ClientRouter swaps replace
+  // the button, so a single delegated listener covers every swapped page
+  // without re-binding (and never stacks duplicate handlers).
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-theme-toggle]') : null;
+    if (!target) return;
+    const isDark = document.documentElement.classList.contains('dark');
+    setThemePreference(isDark ? 'light' : 'dark');
+  });
+
+  // Keep the document in sync with other tabs and OS scheme changes (the
+  // former island did this through `useTheme`).
+  const resync = () => applyTheme(getStoredTheme());
+  window.addEventListener('storage', (event) => {
+    if (event.key === null || event.key === 'theme') resync();
+  });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resync);
+</script>

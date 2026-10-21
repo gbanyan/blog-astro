@@ -2,7 +2,8 @@
 /**
  * Port of components/site-header.tsx — a static `.astro` host that computes
  * the navigation model from content + dictionaries and composes the client
- * islands (NavMenu, SiteHeaderSearch, LanguageSwitcher, ThemeToggle).
+ * islands (NavMenu, SiteHeaderSearch) with the static LanguageSwitcher and
+ * ThemeToggle (no React needed for either).
  *
  * `LocalizedLink` links are pre-localized here with `localizedPath` before
  * being handed to islands.
@@ -11,10 +12,10 @@ import { loadContent, allPagesByLocale, allPostsByLocale, getPagesByLocale } fro
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { LOCALE_ROUTE_MANIFEST, type LocaleRouteManifest } from '@/lib/locale-switcher';
 import { documentPath, localizedPath, type Locale } from '@/lib/locales';
-import { ThemeToggle } from './theme-toggle';
+import ThemeToggle from './theme-toggle.astro';
 import { NavMenu, type IconKey, type NavLinkItem } from './nav-menu';
 import { SiteHeaderSearch } from './site-header-search';
-import { LanguageSwitcher } from './language-switcher';
+import LanguageSwitcher from './language-switcher.astro';
 
 interface Props {
   locale: Locale;
@@ -31,11 +32,17 @@ const pages = getPagesByLocale(locale)
   .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
 const localeManifest: LocaleRouteManifest = { ...LOCALE_ROUTE_MANIFEST };
-for (const document of [...allPagesByLocale, ...allPostsByLocale]) {
+const allDocuments = [...allPagesByLocale, ...allPostsByLocale];
+// First English match wins (same as the former linear `find`).
+const englishByTranslationId = new Map<string, (typeof allDocuments)[number]>();
+for (const candidate of allDocuments) {
+  if (candidate.locale === 'en' && !englishByTranslationId.has(candidate.translationId)) {
+    englishByTranslationId.set(candidate.translationId, candidate);
+  }
+}
+for (const document of allDocuments) {
   if (document.locale !== 'zh-TW') continue;
-  const translation = [...allPagesByLocale, ...allPostsByLocale].find(
-    (candidate) => candidate.locale === 'en' && candidate.translationId === document.translationId
-  );
+  const translation = englishByTranslationId.get(document.translationId);
   if (translation) {
     const defaultPath = documentPath(document, 'zh-TW');
     localeManifest[defaultPath] = {
@@ -94,20 +101,22 @@ const navItems: NavLinkItem[] = [
   <div class="container mx-auto flex items-center justify-between px-4 py-3 text-slate-900 dark:text-slate-100">
     <a
       href={localizedPath('/', locale)}
-      class="motion-link group relative type-title whitespace-nowrap text-slate-900 hover:text-accent focus-visible:outline-none focus-visible:text-accent dark:text-slate-100 dark:hover:text-accent"
+      class="motion-link group relative type-title whitespace-nowrap text-slate-900 hover:text-accent focus-visible:outline-none focus-visible:text-accent dark:text-slate-100 dark:hover:text-accent-textDark"
     >
       <span class="absolute -bottom-0.5 left-0 h-[2px] w-0 bg-accent transition-all duration-180 ease-snappy group-hover:w-full" aria-hidden="true" />
       {dictionary.brand.title}
     </a>
     <div class="flex items-center gap-3">
       <NavMenu
-        client:load
+        client:idle
         items={navItems}
         currentPath={currentPath}
         labels={{
           openMenu: dictionary.common.openMenu,
           closeMenu: dictionary.common.closeMenu,
           navigationMenu: dictionary.common.navigationMenu,
+          mainNavigation: dictionary.common.mainNavigation,
+          copyright: dictionary.common.copyright,
         }}
       />
       <SiteHeaderSearch
@@ -119,13 +128,11 @@ const navItems: NavLinkItem[] = [
         currentPath={currentPath}
       />
       <LanguageSwitcher
-        client:load
         manifest={localeManifest}
         currentPath={currentPath}
         labels={dictionary.language}
       />
       <ThemeToggle
-        client:load
         labels={{
           switchToLight: dictionary.common.switchToLight,
           switchToDark: dictionary.common.switchToDark,

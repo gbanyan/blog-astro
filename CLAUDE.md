@@ -5,13 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 - `npm run dev` - `astro dev` dev server. Content collections (posts/pages) are native Astro loaders — markdown under `content/` hot-reloads directly; the Velite data-generation stage from the Next.js era is gone, there is no equivalent step to run.
-- `npm run build` - Full production build: sync-assets → check-i18n-content → check-assets → `astro build` (static HTML + build-time OG PNG cards) → Pagefind indexing → copy Pagefind to `dist/_pagefind`
+- `npm run build` - Full production build: sync-assets → check-i18n-content → check-assets → build-display-font → `astro build` (static HTML + build-time OG PNG cards) → finalize-dist (en 404, Early Hints `Link` rules in `dist/_headers`, prune unreferenced original images) → Pagefind indexing into `dist/_pagefind`
 - `npm run preview` - `astro preview` — serve the built `dist/` locally
 - `npm run lint` - ESLint via `eslint .` (flat config: `typescript-eslint` recommended + classic `react-hooks` rules; see `eslint.config.mjs`)
 - `npm test` - Unit tests for lib contracts via Vitest
 - `npm run verify` - Full local gate = build + i18n validation + ESLint + tests (CI projection)
 - `npm run check-i18n` / `npm run check-i18n-content` - Validate locale pairing of the loaded content records (also run during build)
-- `npm run sync-assets` - Copy `content/assets/` to `public/assets/` (also runs automatically before build)
+- `npm run sync-assets` - Copy `content/assets/` to `public/assets/` and generate responsive WebP variants of inline Markdown images into `public/assets/_responsive/` (also runs automatically before build/dev)
+- `npm run build-display-font` - Build-time LXGW WenKai TC subset (weight 700, only glyphs used in headings/titles/UI) into git-ignored `public/fonts/`; cached in `node_modules/.cache/display-font` by glyph-set hash (also runs in `predev`)
 
 ## Architecture
 
@@ -43,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Layout hierarchy**: `src/layouts/layout.astro` (fonts, theme CSS vars, inline theme script, ClientRouter, JSON-LD) → `src/layouts/layout-shell.astro` (header, sidebar, footer, back-to-top) → page content. UI strings come from `src/lib/i18n/dictionaries.ts`; path/alternate helpers from `src/lib/locales.ts`.
 
-**Islands**: ~30 React 19 components hydrate as islands (`client:load`/`client:idle`/`client:visible`; the cmdk search modal is code-split out of the header bundle). Theming is hand-rolled: inline class-based script in `layout.astro` (matches `@custom-variant dark`) + a small `useTheme()` hook; `next-themes` is replaced (3 consumers: theme-toggle, mermaid-renderer, giscus-comments).
+**Islands**: React 19 islands are kept off the critical path — header/sidebar chrome is static Astro (`language-switcher.astro`, `theme-toggle.astro`, `right-sidebar-content.astro`), remaining chrome islands are `client:idle`/`client:visible`, and only content islands that need it (e.g. `PostListWithControls`) use `client:load`. Pass slim serializable props to islands (see `src/lib/post-list.ts`) — never whole content entries. The cmdk search modal is mounted only on first open. Scroll reveal and code-copy are plain `<script>` components (`scroll-reveal.astro`, `code-copy.astro`). Theming is hand-rolled: inline class-based script in `layout.astro` (matches `@custom-variant dark`) + `src/lib/theme-dom.ts` (React-free; `localStorage.theme` + `omp-theme-change` event) re-exported by `theme.ts`'s `useTheme()` hook for mermaid-renderer and giscus-comments.
 
 **Markdown processing** (configured in `astro.config.mjs`):
 - Remark: GFM, plus a raw-HTML remover (`remarkRemoveRawHtml` — raw HTML blocks are dropped by contract, matching the Velite pipeline) and an image-src rewriter
@@ -60,7 +61,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Theme customization via the `@theme` block in `src/styles/globals.css`: colors, fonts, easing, durations, shadows, keyframes, animations
 - Accent color system via CSS variables set in `src/layouts/layout.astro` from `PUBLIC_COLOR_*` env vars: `--color-accent`, `--color-accent-soft`, `--color-accent-text-light`, `--color-accent-text-dark`
 - Typography plugin (`@tailwindcss/typography`) loaded via `@plugin` directive; prose dark mode handled by custom `.dark .prose` CSS overrides
-- Fonts via the Astro Fonts API (`astro.config.mjs`): Cormorant Garamond (`--font-display-latin`), LXGW WenKai TC (`--font-display-cjk`), Google provider; English headings use the serif display font, body uses the CJK-aware stack
+- Fonts: Cormorant Garamond (`--font-display-latin`) via the Astro Fonts API (`astro.config.mjs`); LXGW WenKai TC (`--font-display-cjk`) is a build-time subset (`scripts/build-display-font.mjs` → `public/fonts/`, declared by `src/lib/display-font.ts` in `layout.astro`, preloaded on zh pages, immutable-cached). New heading glyphs are picked up automatically on the next build; glyphs outside the subset fall back to the next font in the stack. English headings use the serif display font, body uses the CJK-aware stack
 - Search index: Pagefind over `dist/` at build time (`npx pagefind --site dist --output-path dist/_pagefind`)
 
 ## Content Submodule
@@ -124,5 +125,5 @@ The design contract (users, brand personality, aesthetic direction, design princ
 - **Build-time GitHub data freshness.** The `/projects` page fetches the GitHub API at build time (no ISR `revalidate`). Repo data (list, star counts, "last updated") is only as fresh as the last build; an unset/failed fetch renders the graceful empty state. A scheduled rebuild is the remediation, not a runtime cache.
 - **Static OG files.** Per-document OG images are PNG files generated at build time (`/og/[...slug].png`); the runtime `/api/og?title=…` endpoint is retired. OG content changes require a rebuild. `feature_image` continues to take precedence for social cards.
 - **Search smoke-test caveat (headless browsers).** In a headless Chromium environment (e.g. automated smoke tests against `astro preview`), the search modal's first query can end in the error state (`全站搜尋 發生錯誤`) due to a pagefind 1.5.2 worker-init quirk — the same failure reproduces byte-identically on the untouched blog-nextjs site under the same conditions, so it is a pre-existing environment-specific behavior, not a migration regression. The index itself is verified good: direct Pagefind API searches against the served `/_pagefind/` bundle return correct, locale-correct results for both zh-TW and en.
-- **Markdown images served as-is** from `/assets/*` (no runtime AVIF/WebP re-encoding; sharp pre-optimization inside `sync-assets` is an explicit follow-up).
+- **Markdown images**: `src` stays the original `/assets/*` file (feeds and GIFs unchanged); `rehype-optimize-images.ts` adds a WebP `srcset` only when `sync-assets` has generated every variant. Rendered HTML lives in the content-layer cache, so after changing the image pipeline locally run `astro build --force` once (CI starts clean). Covers and list thumbnails use build-time `getImage()` variants.
 - **No PPR/ISR at all** — everything is static at build time (feeds, sitemaps, llms.txt/ai.txt included); any dynamic freshness comes from rebuilds.

@@ -8,6 +8,7 @@ import {
 import { getPageBySlug } from '@/lib/posts';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { metadataForDocument } from '@/lib/seo';
+import { documentOgUrl } from '@/lib/og';
 import { absoluteUrl, type Locale } from '@/lib/locales';
 import { siteConfig } from '@/lib/config';
 import { getCollection, render } from 'astro:content';
@@ -48,7 +49,7 @@ head.twitter = {
   images: [
     page.feature_image
       ? absoluteUrl(page.feature_image.replace('../assets', '/assets'))
-      : absoluteUrl(siteConfig.ogImage)
+      : documentOgUrl(page)
   ]
 };
 ---

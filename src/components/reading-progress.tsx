@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useMounted } from '@/lib/use-mounted';
 
 function supportsScrollDrivenAnimations(): boolean {
   if (typeof CSS === 'undefined') return false;
@@ -9,7 +10,7 @@ function supportsScrollDrivenAnimations(): boolean {
 }
 
 export function ReadingProgress() {
-  const [mounted] = useState(false);
+  const mounted = useMounted();
   const [progress, setProgress] = useState(0);
   const [useScrollDriven, setUseScrollDriven] = useState(false);
 
@@ -47,10 +48,12 @@ export function ReadingProgress() {
     // Defer the initial measurement so state is not set synchronously inside
     // the effect body (lint-clean, same first-paint result).
     const raf = requestAnimationFrame(handleScroll);
-    window.addEventListener('scroll', handleScroll, { passive: true, signal: AbortSignal.timeout(60000) });
+    const controller = new AbortController();
+    window.addEventListener('scroll', handleScroll, { passive: true, signal: controller.signal });
+    window.addEventListener('resize', handleScroll, { passive: true, signal: controller.signal });
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', handleScroll);
+      controller.abort();
     };
   }, [mounted, useScrollDriven, handleScroll]);
 

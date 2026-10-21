@@ -7,7 +7,8 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import SectionDividerStatic from '@/components/section-divider-static.astro';
 import { PostListWithControls } from '@/components/post-list-with-controls';
-import { ScrollReveal } from '@/components/scroll-reveal';
+import ScrollReveal from '@/components/scroll-reveal.astro';
+import { getPostListEntries } from '@/lib/content-images';
 
 interface Props {
   locale: Locale;
@@ -17,6 +18,8 @@ const { locale } = Astro.props;
 const dictionary = getDictionary(locale);
 const posts = await getAllPostsSorted(locale);
 const { tags, aboutUrl, avatarSrc } = getSidebarData(locale);
+// Slim, build-time-computed entries keep the island props small.
+const listEntries = await getPostListEntries(posts);
 
 // Blog schema (source: app/[locale]/blog/page.tsx). `post.url` is already
 // localized for this locale, so `localizedPath(post.url, locale)` is the
@@ -54,10 +57,10 @@ const blogSchema = {
         </p>
       </header>
     </SectionDividerStatic>
-    <ScrollReveal client:load />
+    <ScrollReveal />
     <PostListWithControls
       client:load
-      posts={posts}
+      posts={listEntries}
       locale={locale}
       initialSearch=""
     />
