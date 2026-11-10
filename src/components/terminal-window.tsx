@@ -225,7 +225,7 @@ export function TerminalWindow({
       </div>
 
       {/* Terminal content */}
-      <div className="relative z-10 min-h-0 flex-1 overflow-hidden px-4 py-4 font-mono text-sm sm:px-5 sm:py-5 sm:text-base lg:px-6 lg:py-6 lg:text-lg">
+      <div data-terminal-content className="relative z-10 min-h-0 flex-1 overflow-hidden px-4 py-4 font-mono text-sm sm:px-5 sm:py-5 sm:text-base lg:px-6 lg:py-6 lg:text-lg">
         {(startTyping || skipIntro) && <>
         <div className="text-slate-600 dark:text-slate-300">
           <span className="text-emerald-600 dark:text-emerald-400">~</span>

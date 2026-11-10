@@ -4,6 +4,9 @@ import { clsx } from 'clsx';
 import { FiX } from 'react-icons/fi';
 import { useModalDialog } from '@/lib/use-modal-dialog';
 
+/** Open/close slide and fade duration; callers that wait for the close animation use it too. */
+export const DRAWER_TRANSITION_MS = 300;
+
 interface MobileDrawerProps {
   open: boolean;
   mounted: boolean;
@@ -49,10 +52,10 @@ export function MobileDrawer({
     <>
       <div
         className={clsx(
-          'fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden',
+          'fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden',
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
-        style={{ zIndex: backdropZ }}
+        style={{ zIndex: backdropZ, transitionDuration: `${DRAWER_TRANSITION_MS}ms` }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -64,7 +67,7 @@ export function MobileDrawer({
           fromRight
             ? 'top-0 right-0 bottom-0 w-full max-w-sm rounded-l-2xl border-l border-white/20 dark:border-white/10'
             : 'bottom-0 left-0 right-0 max-h-[85vh] rounded-t-2xl border-t border-white/20 dark:border-white/10',
-          'transition-transform duration-300 ease-snappy',
+          'transition-transform ease-snappy',
           fromRight
             ? open
               ? 'translate-x-0'
@@ -73,7 +76,7 @@ export function MobileDrawer({
               ? 'translate-y-0'
               : 'translate-y-full'
         )}
-        style={{ zIndex: panelZ }}
+        style={{ zIndex: panelZ, transitionDuration: `${DRAWER_TRANSITION_MS}ms` }}
         role="dialog"
         aria-modal={open ? 'true' : undefined}
         aria-labelledby={titleId}

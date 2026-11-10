@@ -11,11 +11,14 @@ interface HeroSectionProps {
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const MATRIX_DURATION = 1800;
 const MATRIX_FADE_DURATION = 500;
-const INTRO_PLAYED_KEY = 'home-intro-played';
+/** Read by the inline script in home.astro too — keep in sync. */
+export const INTRO_PLAYED_KEY = 'home-intro-played';
 /**
- * `pending` is the server render and the hydration render (an empty terminal,
- * no rain), so hydration always matches; a post-mount effect then picks
- * `matrix` (first visit this session) or `final` (intro already played).
+ * `pending` is the server render and the hydration render: the finished
+ * terminal, marked `data-intro-pending`. home.astro's inline script tags the
+ * hero `data-intro-played` before paint on return visits (and under reduced
+ * motion), so the frame shows at once; on a first visit CSS keeps it hidden
+ * until a post-mount effect switches to `matrix`. Hydration always matches.
  */
 type IntroPhase = 'pending' | 'matrix' | 'transition' | 'typing' | 'final';
 
@@ -87,14 +90,18 @@ export function HeroSection({ title, tagline, ariaLabel }: HeroSectionProps) {
   }, [introPhase]);
 
   // Reduced motion and a replayed visit both render the final frame at once.
-  const showFinal = reducedMotion || introPhase === 'final';
+  const pending = introPhase === 'pending';
+  const showFinal = reducedMotion || pending || introPhase === 'final';
   const startTyping = !showFinal && introPhase === 'typing';
   const matrixVisible =
     !showFinal && (introPhase === 'matrix' || introPhase === 'transition');
   const matrixOpacity = introPhase === 'matrix' ? 1 : 0;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl">
+    <div
+      className="relative w-full overflow-hidden rounded-2xl"
+      data-intro-pending={pending ? '' : undefined}
+    >
       {/* The terminal owns the clipped Matrix layer so the rain cannot spill
           into the hero or outside the window. */}
       <div className="relative z-10 mx-auto w-full max-w-2xl px-4 py-6 sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl">

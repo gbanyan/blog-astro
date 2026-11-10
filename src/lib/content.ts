@@ -54,6 +54,7 @@ interface ContentData {
   nav_label?: string;
   hero?: string;
   icon?: string;
+  layout?: string;
 }
 
 interface DocumentFields {
@@ -100,6 +101,8 @@ export interface Page extends DocumentFields {
   nav_label?: string;
   hero?: string;
   icon?: string;
+  /** `device` opts the page into the wide content column. */
+  layout?: string;
 }
 
 export type ContentDocument = Post | Page;

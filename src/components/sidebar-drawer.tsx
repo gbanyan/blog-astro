@@ -1,13 +1,11 @@
 import { FiLayout } from 'react-icons/fi';
 import { clsx } from 'clsx';
-import { MobileDrawer } from './mobile-drawer';
+import { DRAWER_TRANSITION_MS, MobileDrawer } from './mobile-drawer';
 import { useDrawer } from '@/lib/use-drawer';
 import type { Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { useCallback, useEffect, useRef } from 'react';
 
-/** Matches MobileDrawer's slide-out (`duration-300`). */
-const CLOSE_ANIMATION_MS = 300;
 /** The drawer and its trigger are `lg:hidden`; at this width the desktop aside shows. */
 const DESKTOP_QUERY = '(min-width: 64rem)'; // Tailwind v4 `lg` (rem follows the user's font size)
 
@@ -42,7 +40,7 @@ export function SidebarDrawer({ locale }: SidebarDrawerProps) {
     if (!open) {
       // Keep the content visible while the panel slides out.
       if (restoreRef.current) {
-        restoreTimerRef.current = window.setTimeout(restoreNow, CLOSE_ANIMATION_MS);
+        restoreTimerRef.current = window.setTimeout(restoreNow, DRAWER_TRANSITION_MS);
       }
       return;
     }

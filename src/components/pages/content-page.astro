@@ -42,18 +42,20 @@ const hasToc = headings.some((h) => h.depth === 2 || h.depth === 3);
 const hasMermaid = hasMermaidBlock(page.body.html);
 const head = metadataForDocument(page, await getAllPages());
 const publishedDate = page.published_at ? new Date(page.published_at) : null;
+// Opt-in wide column via `layout: device` frontmatter (no page sets it today).
+const isDevice = page.layout === 'device';
 ---
 <Layout head={head} locale={locale}>
   <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
     <JsonLd schema={pageSchema(page)} />
     <ReadingProgress client:idle />
     <ScrollReveal />
-    <PostLayout hasToc={hasToc} contentKey={slug} locale={locale}>
-      <div class="space-y-8">
+    <PostLayout hasToc={hasToc} contentKey={slug} wide={isDevice} locale={locale}>
+      <div class={isDevice ? 'space-y-4' : 'space-y-8'}>
         <!-- Main content area for Pagefind indexing -->
         <div data-pagefind-body>
           <SectionDividerStatic>
-            <header class="mb-6 space-y-4 text-center">
+            <header class={isDevice ? 'mb-4 space-y-3 text-center' : 'mb-6 space-y-4 text-center'}>
               {publishedDate && (
                 <p class="type-small text-slate-500 dark:text-slate-400">
                   <time datetime={publishedDate.toISOString()}>

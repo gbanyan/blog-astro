@@ -11,7 +11,7 @@ import JsonLd from '@/components/json-ld.astro';
 import { metadataForSection } from '@/lib/seo';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
-import { HeroSection } from '@/components/hero-section';
+import { HeroSection, INTRO_PLAYED_KEY } from '@/components/hero-section';
 import { getPostListEntries } from '@/lib/content-images';
 // Server-rendered only (no client directive): the same item the /blog island uses, zero JS here.
 import { PostListItem } from '../post-list-item';
@@ -36,15 +36,33 @@ const posts = await getPostListEntries(
           <h1 class="sr-only">
             {siteConfig.name} — {dictionary.common.latestPosts} — {dictionary.brand.tagline}
           </h1>
-          <HeroSection
-            client:idle
-            title={`${siteConfig.name} — ${dictionary.common.latestPosts}`}
-            tagline={dictionary.brand.tagline}
-            ariaLabel={dictionary.terminal.ariaLabel(
-              `${siteConfig.name} — ${dictionary.common.latestPosts}`,
-              dictionary.brand.tagline
-            )}
-          />
+          <!-- `contents` keeps the hero's layout identical to the bare island. -->
+          <div data-home-hero class="contents">
+            <HeroSection
+              client:idle
+              title={`${siteConfig.name} — ${dictionary.common.latestPosts}`}
+              tagline={dictionary.brand.tagline}
+              ariaLabel={dictionary.terminal.ariaLabel(
+                `${siteConfig.name} — ${dictionary.common.latestPosts}`,
+                dictionary.brand.tagline
+              )}
+            />
+          </div>
+          <!-- Before paint: on a return visit this session (or under reduced
+               motion) show the server-rendered finished terminal at once. -->
+          <script is:inline data-astro-rerun define:vars={{ introKey: INTRO_PLAYED_KEY }}>
+            try {
+              if (
+                sessionStorage.getItem(introKey) === '1' ||
+                matchMedia('(prefers-reduced-motion: reduce)').matches
+              ) {
+                document.querySelector('[data-home-hero]')?.setAttribute('data-intro-played', '');
+              }
+            } catch {
+              // Storage blocked: the first-visit intro plays as usual.
+            }
+          </script>
+          <noscript><style>[data-home-hero] [data-terminal-content] { visibility: visible !important; }</style></noscript>
 
           <section aria-labelledby="latest-posts-heading">
             <header class="mb-6 flex items-end justify-between gap-4 border-b border-slate-200/80 pb-3 dark:border-slate-800">

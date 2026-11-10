@@ -54,7 +54,14 @@ export function useModalDialog(open: boolean, onClose: () => void) {
     return () => {
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleEscape);
-      previousFocus?.focus({ preventScroll: true });
+      // The opener may be hidden by now (e.g. a drawer closed because the
+      // viewport reached the desktop layout, where its trigger is
+      // display:none); fall back to the main landmark instead of <body>.
+      const target =
+        previousFocus?.isConnected && previousFocus.getClientRects().length > 0
+          ? previousFocus
+          : document.getElementById('main');
+      target?.focus({ preventScroll: true });
     };
   }, [open]);
 

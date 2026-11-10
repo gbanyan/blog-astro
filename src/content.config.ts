@@ -45,6 +45,8 @@ const pages = defineCollection({
     nav_label: z.string().optional(),
     icon: z.string().optional(),
     hero: z.string().optional(),
+    // `layout: device` opts a page into the wide content column.
+    layout: z.string().optional(),
   }),
 });
 

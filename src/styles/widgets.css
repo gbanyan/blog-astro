@@ -77,6 +77,12 @@
 }
 
 /* Terminal hero — warm editorial shell, preserved technical core */
+/* Home intro (see hero-section.tsx): the finished terminal is server-rendered;
+   on a first visit it stays hidden until the intro takes over. */
+[data-home-hero]:not([data-intro-played]) [data-intro-pending] [data-terminal-content] {
+  visibility: hidden;
+}
+
 .terminal-hero-window {
   border-color: #c9bca7;
   border-radius: clamp(0.75rem, 0.55rem + 0.5vw, 1rem);
