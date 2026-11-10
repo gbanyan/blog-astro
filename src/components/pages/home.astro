@@ -28,6 +28,21 @@ const posts = await getPostListEntries(
 );
 ---
 <Layout head={metadataForSection('home', locale)} locale={locale}>
+  <Fragment slot="head">
+    <!-- Full loads: before the body parses, flag a return visit this session
+         (or reduced motion) so the server-rendered finished terminal shows at
+         once; a first visit keeps it hidden until the intro plays. -->
+    <script is:inline define:vars={{ introKey: INTRO_PLAYED_KEY }}>
+      let played = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try {
+        played ||= sessionStorage.getItem(introKey) === '1';
+      } catch {
+        // Storage blocked: treat as a first visit.
+      }
+      if (played) document.documentElement.setAttribute('data-intro-played', '');
+    </script>
+    <noscript><style>[data-home-hero] [data-terminal-content] { visibility: visible !important; }</style></noscript>
+  </Fragment>
   <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
     <JsonLd schema={homeSchema(locale)} />
     <section class="pb-4 sm:pb-8">
@@ -48,8 +63,8 @@ const posts = await getPostListEntries(
               )}
             />
           </div>
-          <!-- Before paint: on a return visit this session (or under reduced
-               motion) show the server-rendered finished terminal at once. -->
+          <!-- Soft navigations (ClientRouter swaps <html> attributes): re-run
+               the same check on the fresh hero right after the swap. -->
           <script is:inline data-astro-rerun define:vars={{ introKey: INTRO_PLAYED_KEY }}>
             let played = matchMedia('(prefers-reduced-motion: reduce)').matches;
             try {
@@ -61,7 +76,6 @@ const posts = await getPostListEntries(
               document.querySelector('[data-home-hero]')?.setAttribute('data-intro-played', '');
             }
           </script>
-          <noscript><style>[data-home-hero] [data-terminal-content] { visibility: visible !important; }</style></noscript>
 
           <section aria-labelledby="latest-posts-heading">
             <header class="mb-6 flex items-end justify-between gap-4 border-b border-slate-200/80 pb-3 dark:border-slate-800">

@@ -19,7 +19,9 @@ import { Font } from 'astro:assets';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { siteConfig } from '@/lib/config';
 import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
-import { siteLogoUrl, type HeadModel } from '@/lib/seo';
+import type { HeadModel } from '@/lib/seo';
+import { siteSchemas } from '@/lib/structured-data';
+import JsonLd from '@/components/json-ld.astro';
 import { displayFontCss, displayFontPreloads, getDisplayFont } from '@/lib/display-font';
 import { THEME_INIT_SNIPPET } from '@/lib/theme';
 import '../styles/globals.css';
@@ -32,43 +34,6 @@ interface Props {
 const { head, locale } = Astro.props;
 const dictionary = getDictionary(locale);
 const theme = siteConfig.theme;
-
-// Site-wide structured data, ported from the source root layout.
-const websiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: dictionary.brand.title,
-  description: dictionary.brand.description,
-  url: siteConfig.url,
-  inLanguage: locale,
-  author: {
-    '@type': 'Person',
-    name: siteConfig.author,
-    url: siteConfig.url,
-  },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${siteConfig.url}${localizedPath('/blog', locale)}?search={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
-};
-
-const logo = siteLogoUrl();
-const organizationSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: siteConfig.name,
-  url: siteConfig.url,
-  ...(logo ? { logo } : {}),
-  sameAs: [
-    siteConfig.social.github,
-    siteConfig.social.twitter && `https://twitter.com/${siteConfig.social.twitter.replace('@', '')}`,
-    siteConfig.social.mastodon,
-  ].filter(Boolean),
-};
 
 // Root layout (source `app/[locale]/layout.tsx`) always emits robots with the
 // Google directives plus creator/RSS tags; a page-level `head.robots` fully
@@ -168,11 +133,12 @@ const fullTitle =
     }
     <style set:html={displayFontStyle} />
 
-    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
-    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+    <JsonLd schema={siteSchemas(locale)} />
 
     <Fragment set:html={THEME_INIT_SNIPPET} />
     <ClientRouter />
+    <!-- Page-specific pre-paint head content (e.g. the home intro flag). -->
+    <slot name="head" />
   </head>
   <body>
     <style set:html={accentCss} />
