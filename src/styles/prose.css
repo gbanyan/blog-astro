@@ -1,29 +1,44 @@
 /* Article typography: prose overrides, blockquotes, code blocks (Shiki),
    callouts and the Mermaid viewer. Partial of globals.css. */
 
+/* TOC jump highlight: accent-soft wash in light mode; a translucent accent
+   in dark mode (accent-soft is a pale tint, too bright under light text). */
 .toc-target-highlight {
-  @apply bg-yellow-50/60 dark:bg-yellow-900/40 transition-colors duration-500;
+  @apply bg-accent-soft/60 dark:bg-accent/25 transition-colors duration-500;
 }
 
-/* Subtle hover for article elements */
+/* Blockquotes follow the accent. Calm hover: a soft shadow, no movement. */
 .prose blockquote {
-  @apply transition-transform transition-shadow duration-180 ease-snappy;
+  @apply transition-shadow duration-180 ease-snappy;
   border-left: 4px solid var(--color-accent);
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(124, 58, 237, 0.1));
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--color-accent) 6%, transparent),
+    color-mix(in oklch, var(--color-accent) 10%, transparent)
+  );
   padding: 1.2rem 1.5rem;
   font-style: italic;
   color: rgba(15, 23, 42, 0.78);
   position: relative;
 }
 
+/* CJK has no true italic; browsers would synthesize an oblique. */
+.prose blockquote:lang(zh) {
+  font-style: normal;
+}
+
 .dark .prose blockquote {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(124, 58, 237, 0.08));
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--color-accent-text-dark) 12%, transparent),
+    color-mix(in oklch, var(--color-accent) 8%, transparent)
+  );
   color: rgba(226, 232, 240, 0.85);
-  border-left-color: rgba(167, 139, 250, 0.9);
+  border-left-color: color-mix(in oklch, var(--color-accent-text-dark) 90%, transparent);
 }
 
 .prose blockquote:hover {
-  @apply -translate-y-0.5 shadow-sm;
+  @apply shadow-sm;
 }
 
 .prose blockquote::before {
@@ -33,7 +48,7 @@
   left: 0.8rem;
   font-size: 3rem;
   font-family: 'Times New Roman', 'Noto Serif TC', serif;
-  color: rgba(37, 99, 235, 0.25);
+  color: color-mix(in oklch, var(--color-accent) 25%, transparent);
   pointer-events: none;
 }
 
@@ -99,17 +114,12 @@
 /* Dark mode prose overrides (replaces prose-dark) */
 .dark .prose strong,
 .dark .prose b {
-  color: #f8fafc;
+  color: var(--color-ink-strong);
   font-weight: 700;
 }
 
 .dark .prose em {
   color: #f1f5f9;
-}
-
-.dark .prose h1,
-.dark .prose h2 {
-  color: #f8fafc;
 }
 
 .prose h1>a,
@@ -128,13 +138,13 @@
    frame (border, radius, padding) is ours. */
 .prose pre {
   @apply overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700;
-  @apply transition-transform transition-shadow duration-180 ease-snappy;
+  @apply transition-shadow duration-180 ease-snappy;
   padding: 1rem 1.2rem;
   margin: 1.5rem 0;
 }
 
 .prose pre:hover {
-  @apply -translate-y-0.5 shadow-md;
+  @apply shadow-md;
 }
 
 .prose pre > code {
