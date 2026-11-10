@@ -2,7 +2,8 @@
 import { Image } from 'astro:assets';
 import type { HTMLAttributes } from 'astro/types';
 import { loadContentImage } from '@/lib/content-images';
-import { contentAssetPath, contentAssetSize } from '@/lib/content-assets';
+import { contentAssetPath } from '@/lib/content-assets';
+import { contentAssetSize } from '@/lib/content-asset-files';
 
 interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'height'> {
   src: string;

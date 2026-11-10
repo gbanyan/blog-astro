@@ -2,7 +2,8 @@
 import type { Post } from '@/lib/content';
 import { siteConfig } from '@/lib/config';
 import ContentImage from './content-image.astro';
-import { estimateReadingMinutes, readingTimeLabel } from '@/lib/reading-time';
+import { postCoverSrc, toPostListEntry } from '@/lib/post-list';
+import { readingTimeLabel } from '@/lib/reading-time';
 
 interface Props {
   post: Post;
@@ -13,11 +14,8 @@ interface Props {
 
 const { post, showTags = true, headingLevel = 'h2' } = Astro.props;
 const Heading = headingLevel;
-const readingMinutes = estimateReadingMinutes(post.body?.raw ?? '');
-const cover =
-  post.feature_image && post.feature_image.startsWith('../assets')
-    ? post.feature_image.replace('../assets', '/assets')
-    : undefined;
+const { readingMinutes } = toPostListEntry(post);
+const cover = postCoverSrc(post);
 
 /** Static port of the source server component `PostCard`. */
 ---

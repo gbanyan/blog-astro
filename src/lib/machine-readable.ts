@@ -1,7 +1,7 @@
 import { statSync } from 'node:fs';
 
 import type { ContentDocument, Page, Post } from '@/lib/content';
-import { contentAssetFile } from '@/lib/content-assets';
+import { contentAssetFile } from '@/lib/content-asset-files';
 import { siteConfig } from '@/lib/config';
 import {
   absoluteUrl,

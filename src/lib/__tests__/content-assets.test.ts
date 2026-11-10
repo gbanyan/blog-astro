@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  contentAssetFile,
-  contentAssetPath,
-  contentAssetSize,
-  isContentAsset,
-} from '@/lib/content-assets';
+import { contentAssetFile, contentAssetSize } from '@/lib/content-asset-files';
+import { contentAssetPath, isContentAsset } from '@/lib/content-assets';
 
 describe('contentAssetPath', () => {
   it.each([

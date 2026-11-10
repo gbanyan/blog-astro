@@ -1,5 +1,3 @@
-'use client';
-
 import { Suspense, lazy, useCallback, useState } from 'react';
 import { SearchButton } from './search-button';
 import type { Dictionary } from '@/lib/i18n/dictionaries';

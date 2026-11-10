@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useSyncExternalStore } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import type { Dictionary } from '@/lib/i18n/dictionaries';

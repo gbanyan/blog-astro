@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'hast';
-import { contentAssetFile, contentAssetPath, contentAssetSize } from './content-assets.ts';
+import { contentAssetPath } from './content-assets.ts';
+import { contentAssetFile, contentAssetSize } from './content-asset-files.ts';
 import { inlineImageSrcset } from './content-image-variants.ts';
 
 const DEFAULT_WIDTH = 1200;

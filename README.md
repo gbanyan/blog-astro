@@ -40,13 +40,12 @@ projects page's empty state.
 | `npm run dev` | `astro dev` — dev server. Content **collections** are native to Astro: markdown under `content/` is loaded and hot-reloaded directly; the Velite data-generation stage from the Next.js era is gone. |
 | `npm run build` | Full production build: `sync-assets` (copy `content/assets/` → `public/assets/`) → `check-i18n-content` (locale-pairing asserts on collection records) → `check-assets` (referenced assets must exist) → `astro build` (static HTML + build-time OG PNG cards) → `npx pagefind --site dist` (search index → `dist/_pagefind`). |
 | `npm run preview` | `astro preview` — serve the built `dist/` locally. |
-| `npm run verify` | Full local gate (CI projection): `build` + `check-i18n` + `lint` + `test`. |
+| `npm run verify` | Full local gate (CI projection): `build` + `lint` + `test`. |
 | `npm run lint` | ESLint (flat config: `typescript-eslint` recommended + classic `react-hooks` rules). |
-| `npm test` | Vitest unit tests for the lib contracts (seo, og, machine-readable, reading-time, locale-switcher). |
+| `npm test` | Vitest tests for the lib modules (content, content assets, seo, og, machine-readable, post-list, mermaid viewer, reading-time, locale-switcher) plus the real-content invariants. |
 | `npm run check-delivery -- [origin]` | HTTP regression checks for Worker routing, cache headers, responsive covers, and 404s; defaults to a local Wrangler server at `http://127.0.0.1:4413`. |
 | `npm run sync-assets` | Copy `content/assets/` → `public/assets/` (also runs automatically before build). |
-| `npm run check-i18n` | Locale-pairing validation over the loaded content via `scripts/i18n-validation-adapter.mjs` (routes + sitemap/feed/llms outputs). |
-| `npm run check-i18n-content` | Locale-pairing asserts on the generated collection records (source ↔ English ↔ placeholder counts). |
+| `npm run check-i18n-content` | Content invariants over the real records via Vitest (pairing, unique routes, source/translation parity, hreflang groups). |
 
 Mermaid label checks run locally on macOS with the dev server (`npm run dev`)
 and Playwright (`npx --no-install playwright cli`). Check `/pages/homelab` and
@@ -73,8 +72,8 @@ can find its panel and apply the open-state layout styles.
   **content collections** (`src/content.config.ts`: `posts` + `pages` via
   `glob()` loaders + zod schemas mirroring the old Velite field contract, entry
   ids = path relative to the collection base) → server-side adapter in
-  `src/lib/content.ts` (locale pairing, placeholder handling, slug
-  normalization) → pages and `src/lib/posts.ts` query helpers.
+  `src/lib/content.ts` (async queries, visibility, translation pairing) →
+  page modules in `src/components/pages/` and `src/lib/posts.ts` helpers.
 - **Markdown processing** (global, configured in `astro.config.mjs`): remark
   GFM + `remarkRemoveRawHtml` (raw HTML blocks are dropped by contract) + image
   src rewriting → rehype: callouts → built-in Shiki dual theme

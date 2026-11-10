@@ -12,7 +12,9 @@ import { metadataForSection } from '@/lib/seo';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import { HeroSection } from '@/components/hero-section';
-import PostListItem from '../post-list-item.astro';
+import { getPostListEntries } from '@/lib/content-images';
+// Server-rendered only (no client directive): the same item the /blog island uses, zero JS here.
+import { PostListItem } from '../post-list-item';
 
 interface Props {
   locale: Locale;
@@ -21,7 +23,9 @@ interface Props {
 const { locale } = Astro.props;
 const dictionary = getDictionary(locale);
 const { tags, aboutUrl, avatarSrc } = await getSidebarData(locale);
-const posts = (await getAllPostsSorted(locale)).slice(0, siteConfig.postsPerPage);
+const posts = await getPostListEntries(
+  (await getAllPostsSorted(locale)).slice(0, siteConfig.postsPerPage)
+);
 ---
 <Layout head={metadataForSection('home', locale)} locale={locale}>
   <LayoutShell locale={locale} currentPath={Astro.url.pathname}>

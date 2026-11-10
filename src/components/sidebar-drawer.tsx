@@ -1,5 +1,3 @@
-'use client';
-
 import { FiLayout } from 'react-icons/fi';
 import { clsx } from 'clsx';
 import { MobileDrawer } from './mobile-drawer';

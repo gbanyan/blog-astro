@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useMemo, useRef } from 'react';
 import { useTheme } from '@/lib/theme';
 import type { Locale } from '@/lib/i18n/config';

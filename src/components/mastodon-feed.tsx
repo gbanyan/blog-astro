@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { FaMastodon } from 'react-icons/fa';
 import { FiArrowRight } from 'react-icons/fi';

@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 
 const FOCUSABLE_SELECTOR = [

@@ -1,5 +1,3 @@
-'use client';
-
 import '@/styles/device-heroes.css';
 import { SiArchlinux, SiUbuntu, SiLinux } from 'react-icons/si';
 

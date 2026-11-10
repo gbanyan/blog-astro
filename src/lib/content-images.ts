@@ -1,7 +1,8 @@
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import type { Post } from './content';
-import { contentAssetPath, contentAssetSize } from './content-assets';
+import { contentAssetPath } from './content-assets';
+import { contentAssetSize } from './content-asset-files';
 import { postCoverSrc, toPostListEntry } from './post-list';
 import type { PostListEntry, PostListThumbnail } from './post-list';
 

@@ -9,14 +9,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run preview` - `astro preview` — serve the built `dist/` locally
 - `npm run lint` - ESLint via `eslint .` (flat config: `typescript-eslint` recommended + classic `react-hooks` rules; see `eslint.config.mjs`)
 - `npm test` - Unit tests for lib contracts via Vitest
-- `npm run verify` - Full local gate = build + i18n validation + ESLint + tests (CI projection)
-- `npm run check-i18n` / `npm run check-i18n-content` - Validate locale pairing of the loaded content records (also run during build)
+- `npm run verify` - Full local gate = build + ESLint + tests (CI projection)
+- `npm run check-i18n-content` - Content invariants over the real `content/` records (translation pairing, unique routes, source/translation metadata parity, hreflang groups) via Vitest (`src/lib/__tests__/content-invariants.test.ts`, also run during build)
 - `npm run sync-assets` - Copy `content/assets/` to `public/assets/` and generate responsive WebP variants of inline Markdown images into `public/assets/_responsive/` (also runs automatically before build/dev)
 - `npm run build-display-font` - Build-time LXGW WenKai TC subset (weight 700, only glyphs used in headings/titles/UI) into git-ignored `public/fonts/`; cached in `node_modules/.cache/display-font` by glyph-set hash (also runs in `predev`)
 
 ## Architecture
 
-**Content pipeline**: `content/` git submodule (Markdown) → Astro content collections (`src/content.config.ts`: `posts` + `pages` via `glob()` loaders, zod schema mirroring the old Velite field contract, entry id = path relative to the collection base) → server-side adapter in `src/lib/content.ts` → pages and `src/lib/posts.ts` helpers. Velite and the ignored `.velite/` directory are gone; collections are the data source.
+**Content pipeline**: `content/` git submodule (Markdown) → Astro content collections (`src/content.config.ts`: `posts` + `pages` via `glob()` loaders, zod schema mirroring the old Velite field contract, entry id = path relative to the collection base) → the content module `src/lib/content.ts` → page modules and `src/lib/posts.ts` / `tags.ts` helpers. Velite and the ignored `.velite/` directory are gone; collections are the data source.
 
 **Routing** (static output, no adapter; bilingual with `zh-TW` as the unprefixed default):
 - `i18n: { defaultLocale: 'zh-TW', locales: ['zh-TW', 'en'], routing: { prefixDefaultLocale: false } }` — URL contract identical to production: `/`, `/blog/*`, `/pages/*`, `/tags/*`, `/projects`, `/en/*`. No `/zh-TW` segment ever appears.
@@ -32,15 +32,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Key data flow**:
 - `src/lib/config.ts` — `siteConfig` object built from `PUBLIC_*` env vars (`import.meta.env`, with fallbacks for plain-Node consumers like the i18n scripts); all site metadata, social links, accent colors, pagination
-- `src/lib/content.ts` — Server-side boundary over Astro collection entries (locale pairing, placeholder handling, source-path→slug normalization)
-- `src/lib/posts.ts` — Query helpers: `getAllPostsSorted()`, `getPostBySlug()`, `getPageBySlug()`, `getRelatedPosts()`, `getPostNeighbors()`
-- `src/lib/tags.ts` — Synchronous tag helpers (`getTagSlug()`, `getAllTagsWithCount()`)
-- `src/lib/seo.ts` — `metadataForDocument()` / `metadataForPath()`, hreflang/x-default pairing, sitemap entry helpers (plain objects consumed by the `layout.astro` head assembly, replacing Next `Metadata`)
-- `src/lib/og.ts` — Static OG card URLs (`documentOgUrl()`) + `socialImageUrl()`; `feature_image` takes precedence
-- `src/lib/machine-readable.ts` — RSS, llms.txt, ai.txt builders (framework-neutral)
+- `src/lib/content.ts` — The content module: async queries with loading hidden inside (`getPosts(locale)`, `getAllPosts()`, `getAllDocuments()`, `findPost()`, `findPage()`, `getContentEntry()` for `render()`), the slim `Post`/`Page` record (`collection`, `locale`, `translationId`, `isPlaceholder`, `sourcePath`, `flattenedPath`, `url`, `body`), visibility (`isPublished`, `isIndexable`) and the single translation-pairing rule (`translationsOf(doc, documents, visibility)`). Works under plain Node/Vitest via a gray-matter fallback
+- `src/lib/posts.ts` — `newestFirst()`, `getAllPostsSorted()`, `getRelatedPosts()`, `getPostNeighbors()`
+- `src/lib/tags.ts` — `getTagSlug()`, `tagPath()` (the one tag-URL builder), `countTags()` / `getTagsWithCount()`, `tagLabelForSlug()`, `postsWithTag()`
+- `src/lib/seo.ts` — Head models: `metadataForDocument(doc, documents)` (complete, incl. article Open Graph), `metadataForSection()`, `metadataForTag()`, `metadataForPath()`; sitemap builders take the document list (plain objects consumed by the `layout.astro` head assembly)
+- `src/lib/structured-data.ts` — JSON-LD builders for every page kind (rendered by `components/json-ld.astro`)
+- `src/lib/routes.ts` — `getStaticPaths` for the post/page/tag routes (shared by zh-TW and `/en` stubs)
+- `src/lib/content-assets.ts` — The `../assets` → `/assets` rule (isomorphic); `content-asset-files.ts` is its server-only half (disk path, intrinsic size)
+- `src/lib/og.ts` — Static OG card URLs (`documentOgUrl()`, `ogCardPath()`) + `socialImageUrl()` / `documentSocialImage()`; `feature_image` takes precedence
+- `src/lib/machine-readable.ts` — RSS and llms.txt builders over a passed-in document list (framework-neutral)
 - `src/lib/mastodon.ts` — Mastodon API client for sidebar feed widget (island fetches the instance API directly)
 - `src/lib/reading-time.ts` — CJK-aware word count and reading-time estimate
 - `src/lib/rehype-callouts.ts` — Custom rehype plugin for GitHub-style `[!NOTE]` callout blocks
+
+**Pages**: route files under `src/pages/` (zh-TW and `/en`) are locale-binding stubs; each page module in `src/components/pages/*.astro` owns its data lookup, head model, JSON-LD and `Layout`/`LayoutShell` wrapping.
 
 **Layout hierarchy**: `src/layouts/layout.astro` (fonts, theme CSS vars, inline theme script, ClientRouter, JSON-LD) → `src/layouts/layout-shell.astro` (header, sidebar, footer, back-to-top) → page content. UI strings come from `src/lib/i18n/dictionaries.ts`; path/alternate helpers from `src/lib/locales.ts`.
 

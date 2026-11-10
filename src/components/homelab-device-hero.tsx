@@ -1,5 +1,3 @@
-'use client';
-
 import '@/styles/device-heroes.css';
 import { SiTruenas, SiProxmox } from 'react-icons/si';
 import { FiServer } from 'react-icons/fi';

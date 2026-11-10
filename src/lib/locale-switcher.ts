@@ -6,9 +6,10 @@
  * - Keep keys in this manifest canonical (zh-TW) paths, without a locale
  *   prefix, e.g. `/blog/my-post` and `/tags/medicine`.
  * - Add an `en` value only when the corresponding English route exists.
- * - Pass the same manifest to `resolveLocaleSwitchTarget` from a future
- *   locale-aware route/content layer. Missing entries intentionally resolve
- *   to a section or homepage fallback instead of a dead link.
+ * - `site-header.astro` extends this manifest with every translated document
+ *   (via `translationsOf`) and passes it to `resolveLocaleSwitchTarget`.
+ *   Missing entries intentionally resolve to a section or homepage fallback
+ *   instead of a dead link.
  */
 
 import { DEFAULT_LOCALE, type Locale } from './locales';
@@ -33,10 +34,7 @@ export interface LocaleSwitchTarget {
   isFallback: boolean;
 }
 
-/**
- * Route-level pairs are safe even before translated detail content is wired.
- * Detail routes should be added by the locale/content integration layer.
- */
+/** Section routes that exist in both locales; document pairs are added per page by the header. */
 export const LOCALE_ROUTE_MANIFEST: LocaleRouteManifest = {
   '/': { defaultPath: '/' },
   '/blog': { defaultPath: '/blog' },

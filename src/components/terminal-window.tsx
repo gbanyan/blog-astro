@@ -1,5 +1,3 @@
-'use client';
-
 import { MatrixRain } from './matrix-rain';
 import { useState, useEffect, useCallback } from 'react';
 

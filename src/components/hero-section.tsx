@@ -1,5 +1,3 @@
-'use client';
-
 import { useSyncExternalStore } from 'react';
 import { useEffect, useState } from 'react';
 import { TerminalWindow } from './terminal-window';

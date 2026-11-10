@@ -12,7 +12,9 @@ interface Props {
 }
 
 /**
- * Port of components/post-list-item.tsx. `LocalizedLink` becomes a plain
+ * The one post list item: server-rendered without a directive on the home
+ * page (zero JS) and inside the `PostListWithControls` island on /blog.
+ * `LocalizedLink` becomes a plain
  * `<a>` (the adapter's `post.url` is already locale-localized, and Astro's
  * ClientRouter soft-navigates every internal link, matching the source's
  * `transitionTypes={[...NAV_TRANSITION]}` behavior). Takes the slim

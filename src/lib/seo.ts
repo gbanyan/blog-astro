@@ -1,6 +1,6 @@
 import { isIndexable, translationsOf } from './content';
 import type { ContentDocument } from './content';
-import { contentAssetSize } from './content-assets';
+import { contentAssetSize } from './content-asset-files';
 import {
   absoluteUrl,
   DEFAULT_LOCALE,

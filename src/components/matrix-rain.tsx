@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 
 // Matrix-style characters: katakana, numbers, Latin
