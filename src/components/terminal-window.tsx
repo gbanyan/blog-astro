@@ -95,57 +95,77 @@ export function TerminalWindow({
   useEffect(() => {
     if (!startTyping || phase !== 'prompt') return;
 
-      const cleanup = typeString(prompt, setDisplayedPrompt, () => {
-        setTimeout(() => setPhase('typing-line1'), lineDelay);
-      });
-      return cleanup;
+    let timeoutId: number | undefined;
+    const cleanup = typeString(prompt, setDisplayedPrompt, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-line1'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
   }, [phase, prompt, typeString, lineDelay, startTyping]);
 
   useEffect(() => {
     if (!startTyping || phase !== 'typing-line1') return;
 
-      const cleanup = typeString(line1, setDisplayedLine1, () => {
-        setTimeout(() => setPhase('typing-line2'), lineDelay);
-      });
-      return cleanup;
+    let timeoutId: number | undefined;
+    const cleanup = typeString(line1, setDisplayedLine1, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-line2'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
   }, [phase, line1, typeString, lineDelay, startTyping]);
 
   useEffect(() => {
     if (!startTyping || phase !== 'typing-line2') return;
 
-      const cleanup = typeString(line2, setDisplayedLine2, () => {
-        setTimeout(() => setPhase('prompt2'), lineDelay);
-      });
-      return cleanup;
+    let timeoutId: number | undefined;
+    const cleanup = typeString(line2, setDisplayedLine2, () => {
+      timeoutId = window.setTimeout(() => setPhase('prompt2'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
   }, [phase, line2, typeString, lineDelay, startTyping]);
 
   useEffect(() => {
     if (!startTyping || phase !== 'prompt2') return;
 
-      const cleanup = typeString(prompt2, setDisplayedPrompt2, () => {
-        setTimeout(() => setPhase('typing-ascii'), lineDelay);
-      });
-      return cleanup;
+    let timeoutId: number | undefined;
+    const cleanup = typeString(prompt2, setDisplayedPrompt2, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-ascii'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
   }, [phase, prompt2, typeString, lineDelay, startTyping]);
 
   useEffect(() => {
     if (!startTyping || phase !== 'typing-ascii') return;
 
-      if (reducedMotion) {
-        setTimeout(() => setPhase('done'), lineDelay);
-        return;
+    let timeoutId: number | undefined;
+    if (reducedMotion) {
+      timeoutId = window.setTimeout(() => setPhase('done'), lineDelay);
+      return () => window.clearTimeout(timeoutId);
+    }
+    let lineIndex = 0;
+    const id = setInterval(() => {
+      if (lineIndex < ASCII_ART.length) {
+        setDisplayedAscii((prev) => [...prev, ASCII_ART[lineIndex]]);
+        lineIndex++;
+      } else {
+        clearInterval(id);
+        timeoutId = window.setTimeout(() => setPhase('done'), lineDelay);
       }
-      let lineIndex = 0;
-      const id = setInterval(() => {
-        if (lineIndex < ASCII_ART.length) {
-          setDisplayedAscii((prev) => [...prev, ASCII_ART[lineIndex]]);
-          lineIndex++;
-        } else {
-          clearInterval(id);
-          setTimeout(() => setPhase('done'), lineDelay);
-        }
-      }, asciiLineDelay);
-      return () => clearInterval(id);
+    }, asciiLineDelay);
+    return () => {
+      clearInterval(id);
+      window.clearTimeout(timeoutId);
+    };
   }, [phase, asciiLineDelay, lineDelay, reducedMotion, startTyping]);
 
   // Blinking cursor
@@ -193,7 +213,7 @@ export function TerminalWindow({
           <span className="text-slate-500"> $ </span>
           <span>{displayedPrompt}</span>
           {phase === 'prompt' && cursorVisible && (
-            <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+            <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
           )}
         </div>
 
@@ -201,7 +221,7 @@ export function TerminalWindow({
           <div className="mt-2 text-slate-900 dark:text-slate-100">
             {displayedLine1}
             {phase === 'typing-line1' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -210,7 +230,7 @@ export function TerminalWindow({
           <div className="mt-1 text-slate-600 dark:text-slate-300">
             {displayedLine2}
             {phase === 'typing-line2' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -221,7 +241,7 @@ export function TerminalWindow({
             <span className="text-slate-500"> $ </span>
             <span>{displayedPrompt2}</span>
             {phase === 'prompt2' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -232,7 +252,7 @@ export function TerminalWindow({
               <div key={i}>{line}</div>
             ))}
             {phase === 'typing-ascii' && cursorVisible && (
-              <span className="inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -241,7 +261,7 @@ export function TerminalWindow({
           <div className="mt-2 text-slate-600 dark:text-slate-300">
             <span className="text-emerald-600 dark:text-emerald-400">~</span>
             <span className="text-slate-500"> $ </span>
-            <span className="inline-block h-4 w-4 animate-pulse border-l-2 border-emerald-600 dark:border-emerald-400" />
+            <span className="inline-block h-4 w-4 motion-safe:animate-pulse border-l-2 border-emerald-600 dark:border-emerald-400" />
           </div>
         )}
         </>}

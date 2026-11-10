@@ -21,6 +21,8 @@
 
   /* Custom transition timing */
   --ease-snappy: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quarter: cubic-bezier(0.25, 1, 0.5, 1);
 
   /* Custom transition durations */
   --duration-180: 180ms;
@@ -93,8 +95,10 @@ html[data-astro-transition='back']::view-transition-new(root) {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* `backwards` (not `both`): the end state equals the resting style, and
+   not filling forwards leaves `transform` free for .motion-card's hover. */
 .repo-card-enter {
-  animation: fade-in-up 0.6s ease-out both;
+  animation: fade-in-up 0.6s ease-out backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1388,6 +1392,9 @@ html[data-astro-transition='back']::view-transition-new(root) {
 }
 
 :root {
+  /* Native scrollbars / form controls follow the active theme */
+  color-scheme: light;
+
   --motion-duration-short: 180ms;
   --motion-duration-medium: 260ms;
   --motion-ease-snappy: cubic-bezier(0.32, 0.72, 0, 1);
@@ -1407,6 +1414,8 @@ html[data-astro-transition='back']::view-transition-new(root) {
 }
 
 .dark {
+  color-scheme: dark;
+
   /* Ink palette — warm-tinted neutrals (dark) */
   --color-ink-strong: #e7e5e4;
   --color-ink-body: #d6d3d1;
@@ -1919,9 +1928,12 @@ body {
   }
 }
 
-/* Search modal overlay (cmdk / Radix Dialog) */
-[data-radix-dialog-overlay] {
-  @apply bg-black/50 backdrop-blur-sm;
+/* Search modal backdrop. cmdk's Command.Dialog renders a Radix Dialog
+   Overlay tagged `cmdk-overlay` (Radix itself adds no attribute to match).
+   It sits just below the dialog panel (z-[9999] in search-modal.tsx); a
+   click on it is a pointer-down outside the content, which closes. */
+[cmdk-overlay] {
+  @apply fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm dark:bg-black/60;
 }
 
 /* Code blocks (Shiki dual theme). The block background comes from Shiki's

@@ -110,6 +110,8 @@ export function MatrixRain({
 
     resize();
     const resizeObserver = new ResizeObserver(resize);
+    // The canvas fills its container, so track the container's box.
+    resizeObserver.observe(canvas.parentElement ?? canvas);
 
     let animationId: number;
     let lastTime: number | null = null;
@@ -182,7 +184,6 @@ export function MatrixRain({
         display: 'block',
       }}
       aria-hidden="true"
-      role="img"
     />
   );
 }

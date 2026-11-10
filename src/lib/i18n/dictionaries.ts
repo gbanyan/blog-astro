@@ -106,6 +106,8 @@ export type Dictionary = {
   };
   tags: {
     title: string;
+    /** Eyebrow above a single tag's archive heading. */
+    archive: string;
     description: string;
     explore: (count: number) => string;
     topTags: string;
@@ -253,6 +255,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     terminal: { ariaLabel: (title, tagline) => `終端機：${title} - ${tagline}` },
     tags: {
       title: '標籤索引',
+      archive: '標籤彙整',
       description: '瀏覽所有標籤，探索不同主題的文章。',
       explore: (count) => `共 ${count} 組主題，任你探索`,
       topTags: '熱度最高的標籤：',
@@ -386,6 +389,7 @@ const dictionaries: Record<Locale, Dictionary> = {
     terminal: { ariaLabel: (title, tagline) => `Terminal: ${title} — ${tagline}` },
     tags: {
       title: 'Tag index',
+      archive: 'Tag archive',
       description: 'Browse all tags and explore articles by topic.',
       explore: (count) => `${count} topics to explore`,
       topTags: 'Trending tags:',

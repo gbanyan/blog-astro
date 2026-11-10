@@ -30,7 +30,7 @@ export function PostListItem({ post, priority = false, variant = 'default' }: Pr
         'group relative flex gap-4 border',
         readingVariant
           ? 'rounded-xl border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-slate-300 hover:bg-slate-50/60 dark:border-slate-800 dark:bg-slate-950/30 dark:hover:border-slate-700 dark:hover:bg-slate-900/50 sm:p-5'
-          : 'motion-card rounded-2xl border-white/40 bg-white/90 p-5 shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl dark:border-white/10 dark:bg-slate-900/90'
+          : 'motion-card rounded-2xl border-white/40 bg-white/90 p-5 shadow-lg hover:shadow-xl dark:border-white/10 dark:bg-slate-900/90'
       )}
     >
       {!readingVariant && (
