@@ -27,7 +27,11 @@ const recentPosts = (await getAllPostsSorted(locale))
   .map((p) => ({ title: p.title, url: p.url }));
 ---
 
-<div class="flex min-h-screen flex-col">
+<!-- overflow-x-clip: full-bleed media (cover images, device heroes) may poke
+     past the viewport edge on narrow layouts; clip it there instead of growing
+     a horizontal scrollbar (it was off-screen anyway). `clip` keeps sticky
+     positioning working and, unlike on <html>, is not turned into `hidden`. -->
+<div class="flex min-h-screen flex-col overflow-x-clip">
   <!-- Skip link: first focusable element, visually hidden until focused. -->
   <a href="#main" class="skip-link">{labels.skipToContent}</a>
   <SiteHeader locale={locale} currentPath={currentPath} recentPosts={recentPosts} />

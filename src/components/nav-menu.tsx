@@ -64,9 +64,21 @@ export interface NavLinkItem {
   children?: NavLinkItem[];
 }
 
+/**
+ * Breakpoint at which the inline desktop nav replaces the menu button. Full
+ * class strings (not interpolated) so Tailwind sees every variant. English
+ * labels are wider, so the English header switches at `xl`.
+ */
+const DESKTOP_CLASSES = {
+  lg: { mobileOnly: 'lg:hidden', nav: 'hidden lg:flex lg:items-center lg:gap-3', dropdown: 'lg:block' },
+  xl: { mobileOnly: 'xl:hidden', nav: 'hidden xl:flex xl:items-center xl:gap-3', dropdown: 'xl:block' },
+} as const;
+
 interface NavMenuProps {
   items: NavLinkItem[];
   labels: Pick<Dictionary['common'], 'openMenu' | 'closeMenu' | 'navigationMenu' | 'mainNavigation' | 'copyright'>;
+  /** Where the inline desktop nav takes over from the menu button (default `lg`). */
+  desktopFrom?: 'lg' | 'xl';
   /** `Astro.url.pathname`, passed by the `.astro` host (replaces `usePathname`). */
   currentPath: string;
 }
@@ -82,7 +94,8 @@ function normalizeRoutePath(path: string): string {
 
 const subscribeToClientMount = () => () => {};
 
-export function NavMenu({ items, labels, currentPath }: NavMenuProps) {
+export function NavMenu({ items, labels, currentPath, desktopFrom = 'lg' }: NavMenuProps) {
+  const desktop = DESKTOP_CLASSES[desktopFrom];
   const [openPathname, setOpenPathname] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [expandedMobileItems, setExpandedMobileItems] = useState<string[]>([]);
@@ -283,7 +296,7 @@ export function NavMenu({ items, labels, currentPath }: NavMenuProps) {
       {/* Mobile Menu Trigger */}
       <button
         type="button"
-        className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors before:absolute before:-inset-1 before:rounded-full before:content-[''] hover:bg-slate-100 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-accent-textDark lg:hidden"
+        className={`relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors before:absolute before:-inset-1 before:rounded-full before:content-[''] hover:bg-slate-100 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-accent-textDark ${desktop.mobileOnly}`}
         aria-label={open ? labels.closeMenu : labels.openMenu}
         aria-expanded={open}
         aria-controls={mobileDialogId}
@@ -308,7 +321,7 @@ export function NavMenu({ items, labels, currentPath }: NavMenuProps) {
           <div
             ref={dialogRef}
             id={mobileDialogId}
-            className={`fixed inset-0 z-[100] flex flex-col bg-white/95 backdrop-blur-xl transition-all duration-300 ease-snappy dark:bg-gray-950/95 lg:hidden ${open ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 z-[100] flex flex-col bg-white/95 backdrop-blur-xl transition-all duration-300 ease-snappy dark:bg-gray-950/95 ${desktop.mobileOnly} ${open ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'}`}
             role="dialog"
             aria-modal={open ? 'true' : undefined}
             aria-label={labels.navigationMenu}
@@ -347,7 +360,7 @@ export function NavMenu({ items, labels, currentPath }: NavMenuProps) {
         )}
 
       {/* Desktop Menu */}
-      <nav aria-label={labels.mainNavigation} className="hidden lg:flex lg:items-center lg:gap-3">
+      <nav aria-label={labels.mainNavigation} className={desktop.nav}>
         {items.map((item) => {
           if (item.children && item.children.length > 0) {
             const Icon = ICON_MAP[item.iconKey] ?? FiFile;
@@ -381,7 +394,7 @@ export function NavMenu({ items, labels, currentPath }: NavMenuProps) {
 
                 <div
                   id={dropdownId}
-                  className={`absolute left-0 top-full z-50 hidden min-w-[12rem] rounded-2xl border border-slate-200 bg-white p-2 shadow-lg transition duration-200 ease-snappy dark:border-slate-800 dark:bg-slate-900 lg:block ${isOpen ? 'pointer-events-auto translate-y-2 opacity-100' : 'pointer-events-none translate-y-1 opacity-0'}`}
+                  className={`absolute left-0 top-full z-50 hidden min-w-[12rem] rounded-2xl border border-slate-200 bg-white p-2 shadow-lg transition duration-200 ease-snappy dark:border-slate-800 dark:bg-slate-900 ${desktop.dropdown} ${isOpen ? 'pointer-events-auto translate-y-2 opacity-100' : 'pointer-events-none translate-y-1 opacity-0'}`}
                   aria-hidden={!isOpen}
                   inert={!isOpen}
                 >
