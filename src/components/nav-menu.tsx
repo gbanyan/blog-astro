@@ -119,7 +119,9 @@ export function NavMenu({ items, labels, currentPath, desktopFrom = 'lg' }: NavM
   useEffect(() => {
     const desktopQuery = window.matchMedia(DESKTOP_QUERIES[desktopFrom]);
     const onChange = () => {
-      if (desktopQuery.matches) setOpenPathname(null);
+      if (!desktopQuery.matches) return;
+      setOpenPathname(null);
+      setExpandedMobileItems([]);
     };
     desktopQuery.addEventListener('change', onChange);
     return () => desktopQuery.removeEventListener('change', onChange);

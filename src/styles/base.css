@@ -135,25 +135,42 @@ html[data-astro-transition='back']::view-transition-new(root) {
 
 /* Full-bleed media (post covers, device heroes): below sm a plain 1rem
    edge-to-edge bleed; from sm up it bleeds past the content column by up to
-   --media-bleed but always stops 1.5rem short of the viewport edge, so it is
-   never cropped (`100%` is the content column width, `100vw` the viewport). */
+   --media-bleed but keeps an inset from the viewport edge on each side, so it
+   is never cropped. The clamp assumes a centred column (`100%` = column
+   width, `100vw` = viewport incl. a classic scrollbar, hence the 1.5rem
+   insets); from lg the post grid's 2rem gap shifts the column 1rem left, so
+   the start side gets 1rem more inset. */
 .media-bleed {
   margin-inline: -1rem;
 }
 @media (min-width: 40rem) {
   .media-bleed {
     --media-bleed: 3rem;
-    margin-inline: min(0px, max(calc(-1 * var(--media-bleed)), calc((100% - 100vw) / 2 + 1.5rem)));
+    --media-inset-start: 1.5rem;
+    --media-inset-end: 1.5rem;
+    margin-inline-start: min(0px, max(calc(-1 * var(--media-bleed)), calc((100% - 100vw) / 2 + var(--media-inset-start))));
+    margin-inline-end: min(0px, max(calc(-1 * var(--media-bleed)), calc((100% - 100vw) / 2 + var(--media-inset-end))));
   }
 }
 @media (min-width: 64rem) {
   .media-bleed {
     --media-bleed: 5rem;
+    --media-inset-start: 2.5rem;
   }
+  /* With the TOC open the column sits against the left gutter; there is
+     room for a 1rem bleed only on wide screens. */
+  .post-layout.toc-open .media-bleed {
+    --media-bleed: 0rem;
+  }
+  .post-layout-wide .media-bleed,
+  .post-layout-wide.toc-open .media-bleed {
+    --media-bleed: 0rem;
+  }
+}
+@media (min-width: 86rem) {
   .post-layout.toc-open .media-bleed {
     --media-bleed: 1rem;
   }
-  .post-layout-wide .media-bleed,
   .post-layout-wide.toc-open .media-bleed {
     --media-bleed: 0rem;
   }
