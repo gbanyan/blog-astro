@@ -8,7 +8,7 @@ import { SiArchlinux, SiUbuntu, SiLinux } from 'react-icons/si';
 export function DevEnvDeviceHero({ ariaLabel }: { ariaLabel: string }) {
   return (
     <div
-      className="dev-env-device-hero -mx-4 mb-6 flex justify-center py-4 sm:-mx-12 sm:py-6 lg:-mx-20 lg:py-8 group-[.toc-open]:lg:-mx-4"
+      className="dev-env-device-hero -mx-4 mb-6 flex justify-center py-4 sm:-mx-12 sm:py-6 lg:-mx-20 lg:py-8 group-[.post-layout-wide]:lg:mx-0 group-[.toc-open]:lg:-mx-4"
       role="img"
       aria-label={ariaLabel}
     >

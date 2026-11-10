@@ -9,7 +9,7 @@ import { FiServer } from 'react-icons/fi';
 export function HomeLabDeviceHero({ ariaLabel }: { ariaLabel: string }) {
   return (
     <div
-      className="homelab-device-hero -mx-4 mb-6 flex justify-center py-4 sm:-mx-12 sm:py-6 lg:-mx-20 lg:py-8 group-[.toc-open]:lg:-mx-4"
+      className="homelab-device-hero -mx-4 mb-6 flex justify-center py-4 sm:-mx-12 sm:py-6 lg:-mx-20 lg:py-8 group-[.post-layout-wide]:lg:mx-0 group-[.toc-open]:lg:-mx-4"
       role="img"
       aria-label={ariaLabel}
     >

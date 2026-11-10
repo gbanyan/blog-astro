@@ -42,7 +42,8 @@ const hasToc = headings.some((h) => h.depth === 2 || h.depth === 3);
 const hasMermaid = hasMermaidBlock(page.body.html);
 const head = metadataForDocument(page, await getAllPages());
 const publishedDate = page.published_at ? new Date(page.published_at) : null;
-// Opt-in wide column via `layout: device` frontmatter (no page sets it today).
+// Opt-in wide column via `layout: device` frontmatter (the device pages).
+// Their heroes drop the lg bleed in this mode so the wider column still fits.
 const isDevice = page.layout === 'device';
 ---
 <Layout head={head} locale={locale}>
