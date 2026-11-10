@@ -9,7 +9,7 @@
 import Layout from '@/layouts/layout.astro';
 import LayoutShell from '@/layouts/layout-shell.astro';
 import { getDictionary } from '@/lib/i18n/dictionaries';
-import { documentPath, isPlaceholderDocument, localizedPath, type Locale } from '@/lib/locales';
+import { documentPath, localizedPath, type Locale } from '@/lib/locales';
 import { getAllPostsSorted } from '@/lib/posts';
 import { metadataForPath } from '@/lib/seo';
 
@@ -29,7 +29,7 @@ const head = metadataForPath({
 head.robots = { index: false, follow: true };
 
 const recentPosts = (await getAllPostsSorted(locale))
-  .filter((post) => !isPlaceholderDocument(post))
+  .filter((post) => !post.isPlaceholder)
   .slice(0, 5);
 const dateFormat = locale === 'en' ? 'en-US' : 'zh-TW';
 

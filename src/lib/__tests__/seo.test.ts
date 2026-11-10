@@ -1,77 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
-
-// seo.ts reads content collections only as fallback defaults; every test
-// passes explicit documents, so the mock stays minimal.
-vi.mock('@/lib/content', () => {
-  const base = {
-    title: 't',
-    translationId: 'posts/x',
-    translationKey: 'posts/x',
-    pairing: { key: 'posts/x', locale: 'zh-TW' },
-    translationStatus: 'source',
-    isPlaceholder: false,
-    body: { raw: '', html: '', code: '' },
-    _id: 'x.md',
-    url: '/blog/x',
-    flattenedPath: 'x',
-    __ignoredType: 'Post',
-  };
-  return {
-    allPostsByLocale: [
-      { ...base, locale: 'zh-TW', published_at: '2025-01-01' },
-      {
-        ...base,
-        title: 'placeholder',
-        locale: 'en',
-        translationId: 'posts/placeholder',
-        translationKey: 'posts/placeholder',
-        pairing: { key: 'posts/placeholder', locale: 'en' },
-        translationStatus: 'placeholder',
-        isPlaceholder: true,
-        _id: 'placeholder.md',
-        url: '/blog/placeholder',
-      },
-    ],
-    allPagesByLocale: [],
-    allPosts: [],
-    allPages: [],
-  };
-});
+import { describe, expect, it } from 'vitest';
 
 import {
   localizedSitemapEntries,
   metadataForDocument,
   metadataForPath,
+  metadataForSection,
+  metadataForTag,
   siteLogoUrl,
   type HeadModel,
 } from '@/lib/seo';
 import { localizedRobots, localizedRobotsText, nextRobotsText } from '@/lib/robots';
-import type { Post } from '@/lib/content';
-
-function makeDoc(overrides: Partial<Post> = {}): Post {
-  return {
-    title: 't',
-    locale: 'zh-TW',
-    translationId: 'posts/x',
-    translationKey: 'posts/x',
-    pairing: { key: 'posts/x', locale: 'zh-TW' },
-    translationStatus: 'source',
-    isPlaceholder: false,
-    body: { raw: '', html: '', code: '' },
-    _id: 'posts/x.md',
-    url: '/blog/x',
-    _raw: {
-      sourceFilePath: 'posts/x.md',
-      sourceFileName: 'x.md',
-      sourceFileDir: 'posts',
-      contentType: 'markdown',
-      flattenedPath: 'posts/x',
-    },
-    flattenedPath: 'posts/x',
-    __ignoredType: 'Post',
-    ...overrides,
-  } as unknown as Post;
-}
+import { makePage, makePost } from './fixtures';
 
 /** HeadModel stores hreflang pairs as `{locale, href}` entries. */
 function hrefs(model: HeadModel): Record<string, string> {
@@ -79,10 +18,25 @@ function hrefs(model: HeadModel): Record<string, string> {
 }
 
 describe('localizedSitemapEntries', () => {
-  it('publishes indexable documents but excludes placeholders', () => {
-    const urls = localizedSitemapEntries().map((entry) => entry.url);
+  const zh = makePost('x');
+  const placeholder = makePost('en/placeholder', { translation_status: 'placeholder' });
+  const draft = makePost('draft', { status: 'draft' });
+
+  it('publishes indexable documents but excludes placeholders and drafts', () => {
+    const urls = localizedSitemapEntries([zh, placeholder, draft]).map((entry) => entry.url);
     expect(urls).toContain('https://blog.gbanyan.net/blog/x');
     expect(urls).not.toContain('https://blog.gbanyan.net/en/blog/placeholder');
+    expect(urls).not.toContain('https://blog.gbanyan.net/blog/draft');
+  });
+
+  it('pairs translated documents in the alternates and points x-default at zh-TW', () => {
+    const en = makePost('en/x', { translation_status: 'translated' });
+    const entry = localizedSitemapEntries([zh, en], 'en').find((e) => e.url.endsWith('/en/blog/x'));
+    expect(entry?.alternates?.languages).toEqual({
+      'zh-TW': 'https://blog.gbanyan.net/blog/x',
+      en: 'https://blog.gbanyan.net/en/blog/x',
+      'x-default': 'https://blog.gbanyan.net/blog/x',
+    });
   });
 });
 
@@ -108,47 +62,89 @@ describe('metadataForPath', () => {
 });
 
 describe('metadataForDocument', () => {
-  const zh = makeDoc({});
-  const en = makeDoc({
-    title: 't-en',
-    locale: 'en',
-    translationId: 'posts/x',
-    translationKey: 'posts/x',
-    pairing: { key: 'posts/x', locale: 'en' },
-    translationStatus: 'translated',
-    _id: 'posts/en/x.md',
-    url: '/blog/x',
-    _raw: { ...zh._raw, sourceFilePath: 'posts/en/x.md', sourceFileName: 'x.md' },
-  });
+  const zh = makePost('x');
+  const en = makePost('en/x', { title: 't-en', translation_status: 'translated' });
 
-  it('pairs zh/en alternates from a shared translation key', () => {
+  it('pairs zh/en alternates from a shared translation id', () => {
     const meta = metadataForDocument(zh, [zh, en]);
-    expect(hrefs(meta)).toMatchObject({
+    expect(hrefs(meta)).toEqual({
       'zh-TW': 'https://blog.gbanyan.net/blog/x',
       en: 'https://blog.gbanyan.net/en/blog/x',
       'x-default': 'https://blog.gbanyan.net/blog/x',
     });
     expect(meta.canonical).toBe('https://blog.gbanyan.net/blog/x');
+    expect(hrefs(metadataForDocument(en, [zh, en]))['x-default']).toBe(
+      'https://blog.gbanyan.net/blog/x'
+    );
+  });
+
+  it('does not advertise an unpublished translation', () => {
+    const hidden = makePost('en/x', { translation_status: 'translated', status: 'draft' });
+    expect(hrefs(metadataForDocument(zh, [zh, hidden]))).not.toHaveProperty('en');
   });
 
   it('indexes translated documents but noindexes placeholders', () => {
-    expect(metadataForDocument(en, [zh, en]).robots).toMatchObject({ index: true });
-
-    const placeholder = makeDoc({
-      translationStatus: 'placeholder',
-      isPlaceholder: true,
-    });
-    const placeholderMeta = metadataForDocument(placeholder, [placeholder]);
-    expect(placeholderMeta.robots).toMatchObject({ index: false });
+    expect(metadataForDocument(en, [zh, en]).robots).toEqual({ index: true, follow: true });
+    const placeholder = makePost('en/p', { translation_status: 'placeholder' });
+    const meta = metadataForDocument(placeholder, [placeholder]);
+    expect(meta.robots).toEqual({ index: false, follow: true });
+    expect(meta.googlebot).toBe('noindex, follow');
   });
 
   it('keeps unpaired documents canonical-only', () => {
-    const solo = makeDoc({ translationId: 'posts/solo', pairing: { key: 'posts/solo', locale: 'zh-TW' } });
-    const meta = metadataForDocument(solo, [solo]);
-    expect(hrefs(meta)).toEqual({
-      'zh-TW': 'https://blog.gbanyan.net/blog/x',
-      'x-default': 'https://blog.gbanyan.net/blog/x',
+    const solo = makePost('solo');
+    expect(hrefs(metadataForDocument(solo, [solo, en]))).toEqual({
+      'zh-TW': 'https://blog.gbanyan.net/blog/solo',
+      'x-default': 'https://blog.gbanyan.net/blog/solo',
     });
+  });
+
+  it('uses one description for meta, Open Graph and Twitter', () => {
+    const post = makePost('d', { custom_excerpt: 'excerpt only' });
+    const meta = metadataForDocument(post, [post]);
+    expect(meta.description).toBe('excerpt only');
+    expect(meta.openGraph.description).toBe('excerpt only');
+    expect(meta.twitter.description).toBe('excerpt only');
+  });
+
+  it('marks posts as articles and leaves pages as websites', () => {
+    const post = makePost('a', {
+      published_at: new Date('2024-05-01T00:00:00Z'),
+      tags: ['Tech'],
+      authors: ['Writer'],
+    });
+    const meta = metadataForDocument(post, [post]);
+    expect(meta.openGraph).toMatchObject({
+      type: 'article',
+      publishedTime: '2024-05-01T00:00:00.000Z',
+      authors: ['Writer'],
+      tags: ['Tech'],
+    });
+    const page = makePage('about');
+    const pageMeta = metadataForDocument(page, [page]);
+    expect(pageMeta.openGraph.type).toBeUndefined();
+    expect(pageMeta.googlebot).toBeUndefined();
+    expect(pageMeta.twitter.card).toBe(meta.twitter.card);
+  });
+
+  it('uses the same image for Open Graph and Twitter', () => {
+    const post = makePost('img', { feature_image: '../assets/missing-cover.jpg' });
+    const meta = metadataForDocument(post, [post]);
+    expect(meta.openGraph.images[0].url).toBe('https://blog.gbanyan.net/assets/missing-cover.jpg');
+    expect(meta.twitter.images).toEqual([meta.openGraph.images[0].url]);
+  });
+});
+
+describe('section and tag metadata', () => {
+  it('builds section heads with the home title kept absolute', () => {
+    expect(metadataForSection('home', 'en').titleAbsolute).toBe(true);
+    expect(metadataForSection('blog', 'en').canonical).toBe('https://blog.gbanyan.net/en/blog');
+  });
+
+  it('titles tag archives with the original label and a slug URL', () => {
+    const meta = metadataForTag('Home Lab', 'zh-TW');
+    expect(meta.title).toContain('Home Lab');
+    expect(meta.canonical).toBe('https://blog.gbanyan.net/tags/home-lab');
   });
 });
 
@@ -162,10 +158,14 @@ describe('site-level metadata', () => {
     expect(en.twitter.images[0]).toBe('https://blog.gbanyan.net/og/index/en.png');
   });
 
-  it('uses the per-document card for documents without a feature image', () => {
-    const doc = { title: 't', locale: 'zh-TW', url: '/blog/x', flattenedPath: 'x', __ignoredType: 'Post', _id: 'x.md' };
-    const meta = metadataForDocument(doc as unknown as Post, []);
-    expect(meta.openGraph.images[0].url).toBe('https://blog.gbanyan.net/og/posts/x.png');
+  it('uses the per-document 1200×630 card for documents without a feature image', () => {
+    const doc = makePost('x');
+    const meta = metadataForDocument(doc, [doc]);
+    expect(meta.openGraph.images[0]).toMatchObject({
+      url: 'https://blog.gbanyan.net/og/posts/x.png',
+      width: 1200,
+      height: 630,
+    });
   });
 
   it('does not double-prefix an absolute avatar logo', () => {

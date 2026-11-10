@@ -1,4 +1,5 @@
 import type { ContentLocale, Post } from './content';
+import { contentAssetPath, isContentAsset } from './content-assets';
 import { estimateReadingMinutes } from './reading-time';
 
 /** Pre-optimized list thumbnail (build-time WebP srcset, or the original). */
@@ -39,8 +40,8 @@ export interface PostListEntry {
 
 /** Public `/assets/...` URL of a post's local feature image, if any. */
 export function postCoverSrc(post: Pick<Post, 'feature_image'>): string | undefined {
-  return post.feature_image && post.feature_image.startsWith('../assets')
-    ? post.feature_image.replace('../assets', '/assets')
+  return post.feature_image && isContentAsset(post.feature_image)
+    ? contentAssetPath(post.feature_image)
     : undefined;
 }
 
@@ -53,7 +54,7 @@ function toIsoString(value: Post['published_at']): string | undefined {
 export function toPostListEntry(post: Post, thumbnail?: PostListThumbnail): PostListEntry {
   const raw = post.body?.raw ?? '';
   const entry: PostListEntry = {
-    id: post._id,
+    id: post.sourcePath,
     url: post.url,
     title: post.title,
     locale: post.locale,

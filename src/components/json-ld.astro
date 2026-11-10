@@ -1,0 +1,10 @@
+---
+/** Serializes one or more schema.org nodes from `src/lib/structured-data.ts`. */
+interface Props {
+  schema: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { schema } = Astro.props;
+const schemas = Array.isArray(schema) ? schema : [schema];
+---
+{schemas.map((node) => <script type="application/ld+json" set:html={JSON.stringify(node)} />)}

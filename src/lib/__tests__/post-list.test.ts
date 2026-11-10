@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Post } from '@/lib/content';
+import { makePost as fixturePost } from './fixtures';
 import {
   matchesPostQuery,
   paginationItems,
@@ -13,32 +14,12 @@ import {
 
 function makePost(overrides: Partial<Post> = {}): Post {
   const raw = overrides.body?.raw ?? '這是一段內文。'.repeat(200);
-  return {
-    __ignoredType: 'Post',
+  const post = fixturePost('test', {
     title: '測試文章',
-    locale: 'zh-TW',
-    translationId: 't',
-    translationKey: 't',
-    pairing: { key: 't', locale: 'zh-TW' },
-    translationStatus: 'source',
-    isPlaceholder: false,
-    sourcePath: 'posts/test',
-    raw,
-    body: { raw, html: '<p>big html</p>', code: '<p>big html</p>' },
-    _id: 'posts/test',
-    _raw: {
-      sourceFilePath: 'posts/test.md',
-      sourceFileName: 'test.md',
-      sourceFileDir: 'posts',
-      contentType: 'markdown',
-      flattenedPath: 'posts/test',
-    },
-    flattenedPath: 'test',
-    url: '/blog/test',
     published_at: new Date('2024-05-01T00:00:00Z'),
     tags: ['Linux', 'HomeLab'],
-    ...overrides,
-  } as Post;
+  });
+  return { ...post, body: { raw, html: '<p>big html</p>' }, ...overrides };
 }
 
 describe('toPostListEntry', () => {
@@ -100,8 +81,8 @@ describe('matchesPostQuery', () => {
 
 describe('sortPostEntries', () => {
   it('sorts by publish date in both directions', () => {
-    const a = toPostListEntry(makePost({ _id: 'a', published_at: '2020-01-01' }));
-    const b = toPostListEntry(makePost({ _id: 'b', published_at: '2023-01-01' }));
+    const a = toPostListEntry(makePost({ sourcePath: 'a', published_at: '2020-01-01' }));
+    const b = toPostListEntry(makePost({ sourcePath: 'b', published_at: '2023-01-01' }));
     expect(sortPostEntries([a, b], 'new').map((e) => e.id)).toEqual(['b', 'a']);
     expect(sortPostEntries([b, a], 'old').map((e) => e.id)).toEqual(['a', 'b']);
   });

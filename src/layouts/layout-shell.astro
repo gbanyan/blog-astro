@@ -4,9 +4,8 @@
  * (island host), content slot, footer, and the back-to-top island.
  *
  * `recentPosts` is derived exactly like the source root layout: the five
- * newest posts of the page's locale, after `loadContent()` settles.
+ * newest posts of the page's locale.
  */
-import { loadContent } from '@/lib/content';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getAllPostsSorted } from '@/lib/posts';
 import type { Locale } from '@/lib/locales';
@@ -21,7 +20,6 @@ interface Props {
 }
 
 const { locale, currentPath } = Astro.props;
-await loadContent();
 
 const labels = getDictionary(locale).common;
 const recentPosts = (await getAllPostsSorted(locale))

@@ -3,7 +3,6 @@ import type { Post } from '@/lib/content';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 interface Props {
-  current: Post;
   newer?: Post;
   older?: Post;
   labels: Dictionary['common'];
@@ -11,11 +10,7 @@ interface Props {
 
 const { newer, older, labels } = Astro.props;
 
-/**
- * Static port of the source server component `PostStorylineNav` — pure
- * presentational nav, no client interactivity. `current` stays in the
- * contract for parity (unused).
- */
+/** Newer/older post navigation — pure presentational, no client interactivity. */
 ---
 <nav aria-label={labels.articleNavigation} class="relative mt-10">
   <div class="relative overflow-hidden rounded-[32px] border border-slate-200/70 bg-gradient-to-r from-white via-slate-50 to-white px-6 py-8 shadow-lg dark:border-slate-800/70 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900">

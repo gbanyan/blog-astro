@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-import { loadContent } from '@/lib/content';
+import { getAllDocuments } from '@/lib/content';
 import { localizedSitemapXml } from '@/lib/seo';
 import type { Locale } from '@/lib/locales';
 
@@ -11,9 +11,7 @@ import type { Locale } from '@/lib/locales';
 const locale: Locale = 'en';
 
 export const GET: APIRoute = async () => {
-  await loadContent();
-
-  return new Response(localizedSitemapXml(locale), {
+  return new Response(localizedSitemapXml(await getAllDocuments(), locale), {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',

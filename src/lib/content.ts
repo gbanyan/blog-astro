@@ -1,85 +1,32 @@
-import { DEFAULT_LOCALE, localizedPath } from './locales.ts';
+import { DEFAULT_LOCALE, localizedPath, normalizeLocale } from './locales.ts';
 import type { Locale } from './locales.ts';
 
 /**
- * The stable shape consumed by the application. Dates retain the value
- * emitted by the content layer (Astro's zod `z.coerce.date()` in the Astro
- * runtime, gray-matter in the plain-Node fallback) instead of being
- * normalized to a new value.
+ * The content module: the single owner of how markdown documents become
+ * site records, which of them are public, and how translations pair up.
+ *
+ * Interface:
+ * - Async queries (`getPosts`, `getPages`, `getAllPosts`, `getAllPages`,
+ *   `getAllDocuments`, `findPost`, `findPage`, `getContentEntry`) — loading is hidden inside;
+ *   callers never prime a cache first.
+ * - Pure predicates over a record (`isPublished`, `isIndexable`).
+ * - Pure pairing over a record list (`translationsOf`).
+ *
+ * In the Astro runtime the data comes from `getCollection` (Astro's content
+ * layer); under plain `node` (the build-gate scripts) and Vitest it falls
+ * back to reading `content/` with gray-matter, producing entries with the same
+ * shape as the glob loader.
+ */
+
+/**
+ * Dates retain the value emitted by the content layer (Astro's zod
+ * `z.coerce.date()` in the Astro runtime, gray-matter + coercion in the
+ * plain-Node fallback).
  */
 export type ContentDate = Date | string;
 export { DEFAULT_LOCALE };
 export type ContentLocale = Locale;
-
-export interface RawDocumentData {
-  sourceFilePath: string;
-  sourceFileName: string;
-  sourceFileDir: string;
-  contentType: 'markdown';
-  flattenedPath: string;
-}
-
-export interface MarkdownBody {
-  raw: string;
-  html: string;
-  /** Compatibility alias for consumers that read a compiled body as code. */
-  code: string;
-}
-
-interface SharedContentFields {
-  title: string;
-  locale: ContentLocale;
-  /** Stable key shared by the source document and its translations. */
-  translationId: string;
-  /** Public camelCase alias used by locale-aware consumers. */
-  translationKey: string;
-  /** Deterministic pairing metadata for switchers and SEO. */
-  pairing: { key: string; locale: ContentLocale };
-  /** Original frontmatter field, retained for data consumers. */
-  translation_id?: string;
-  slug?: string;
-  translation_key?: string;
-  translation_status?: 'source' | 'placeholder' | 'translated';
-  is_placeholder?: boolean;
-  /** Derived, explicit SEO status for the bilingual placeholder phase. */
-  translationStatus: 'source' | 'placeholder' | 'translated';
-  isPlaceholder: boolean;
-  description?: string;
-  type?: string;
-  ghost_id?: string;
-  status?: string;
-  visibility?: string;
-  featured?: boolean;
-  created_at?: ContentDate;
-  updated_at?: ContentDate;
-  published_at?: ContentDate;
-  custom_excerpt?: string;
-  authors?: string[];
-  feature_image?: string;
-  tags?: string[];
-  /** Source-relative path, e.g. `posts/en/my-post` (extension stripped). */
-  sourcePath: string;
-  /** Raw markdown body with frontmatter stripped. */
-  raw: string;
-  body: MarkdownBody;
-  _id: string;
-  _raw: RawDocumentData;
-  flattenedPath: string;
-  url: string;
-}
-
-export interface Post extends SharedContentFields {
-  __ignoredType: 'Post';
-}
-
-export interface Page extends SharedContentFields {
-  __ignoredType: 'Page';
-  layout?: string;
-  nav_category?: string;
-  nav_label?: string;
-  hero?: string;
-  icon?: string;
-}
+export type Collection = 'posts' | 'pages';
 
 /** Frontmatter as emitted by the content layer (schema-validated data). */
 interface ContentData {
@@ -103,21 +50,67 @@ interface ContentData {
   authors?: string[];
   feature_image?: string;
   tags?: string[];
-  layout?: string;
   nav_category?: string;
   nav_label?: string;
   hero?: string;
   icon?: string;
 }
 
+interface DocumentFields {
+  collection: Collection;
+  title: string;
+  locale: ContentLocale;
+  /**
+   * Stable key shared by a document and its translations: the explicit
+   * `translation_id` (or legacy `translation_key`) frontmatter, else derived
+   * from the source path with any `en/` segment removed.
+   */
+  translationId: string;
+  /** Placeholder translations are browsable but never indexed. */
+  isPlaceholder: boolean;
+  /** Source-relative path without extension, e.g. `posts/en/my-post`. Unique per document. */
+  sourcePath: string;
+  /** Collection-relative path without extension, e.g. `en/my-post`. Equals the content-layer entry id. */
+  flattenedPath: string;
+  /** Site-relative, locale-prefixed route, e.g. `/en/blog/my-post`. */
+  url: string;
+  body: { raw: string; html: string };
+  slug?: string;
+  translation_status?: 'source' | 'placeholder' | 'translated';
+  description?: string;
+  status?: string;
+  visibility?: string;
+  featured?: boolean;
+  created_at?: ContentDate;
+  updated_at?: ContentDate;
+  published_at?: ContentDate;
+  custom_excerpt?: string;
+  authors?: string[];
+  feature_image?: string;
+  tags?: string[];
+}
+
+export interface Post extends DocumentFields {
+  collection: 'posts';
+}
+
+export interface Page extends DocumentFields {
+  collection: 'pages';
+  nav_category?: string;
+  nav_label?: string;
+  hero?: string;
+  icon?: string;
+}
+
+export type ContentDocument = Post | Page;
+
 /**
  * Raw content-layer entry: an Astro `getCollection` record, or the plain-Node
- * fallback that mirrors it (same field contract as `src/content.config.ts`'s
- * glob loader: `id` is the path relative to the collection base without the
- * extension, `body` is the raw markdown, `data` is the schema-validated
- * frontmatter).
+ * fallback that mirrors it (`id` is the path relative to the collection base
+ * without the extension, `body` is the raw markdown, `data` is the
+ * schema-validated frontmatter).
  */
-interface RawEntry {
+export interface RawEntry {
   id: string;
   body?: string;
   data: ContentData;
@@ -125,113 +118,113 @@ interface RawEntry {
   rendered?: { html?: string };
 }
 
-function removeCollectionPrefix(sourcePath: string, collection: 'posts' | 'pages') {
-  const prefix = `${collection}/`;
-  return sourcePath.startsWith(prefix) ? sourcePath.slice(prefix.length) : sourcePath;
-}
-
-function sourceFileDir(path: string) {
-  const separator = path.lastIndexOf('/');
-  return separator === -1 ? '' : path.slice(0, separator);
-}
-
-function translationId(
-  sourcePath: string,
-  collection: 'posts' | 'pages',
-  explicitId?: string
-) {
-  if (explicitId) return explicitId;
-
-  const relativePath = removeCollectionPrefix(sourcePath, collection);
-  const segments = relativePath.split('/');
-  const localeSegment = segments[0];
-  const stablePath = localeSegment === 'en' ? segments.slice(1).join('/') : relativePath;
+function derivedTranslationId(collection: Collection, entryId: string): string {
+  const segments = entryId.split('/');
+  const stablePath = segments[0] === 'en' ? segments.slice(1).join('/') : entryId;
   return `${collection}/${stablePath}`;
 }
 
-function adaptDocument(document: RawEntry, collection: 'posts'): Post;
-function adaptDocument(document: RawEntry, collection: 'pages'): Page;
-function adaptDocument(document: RawEntry, collection: 'posts' | 'pages'): Post | Page {
-  // Velite emitted `sourcePath` relative to the content root without the
-  // extension (e.g. `posts/en/my-post`); the glob loader's id is relative to
-  // the collection base, so `collection/id` reproduces that contract.
-  const contentPath = `${collection}/${document.id}`;
-  const flattenedPath = removeCollectionPrefix(contentPath, collection);
-  const filePath = `${contentPath}.md`;
-  const rawBody = document.body ?? '';
-  const htmlBody = document.rendered?.html ?? '';
-  const data = document.data;
-  const stableTranslationId = translationId(
-    contentPath,
-    collection,
-    data.translation_id ?? data.translation_key
-  );
-
-  const locale = (data.locale ?? DEFAULT_LOCALE) as ContentLocale;
+/** Turn one content-layer entry into a site record. Exported for tests. */
+export function adaptDocument(entry: RawEntry, collection: 'posts'): Post;
+export function adaptDocument(entry: RawEntry, collection: 'pages'): Page;
+export function adaptDocument(entry: RawEntry, collection: Collection): ContentDocument;
+export function adaptDocument(entry: RawEntry, collection: Collection): ContentDocument {
+  const { data } = entry;
+  const locale = normalizeLocale(data.locale) ?? DEFAULT_LOCALE;
   const translationStatus =
-    data.translation_status ?? (locale === 'en' ? 'placeholder' : 'source');
-  const isPlaceholder = data.is_placeholder ?? translationStatus === 'placeholder';
-  const adapted = {
-    ...data,
-    locale,
-    translationStatus,
-    isPlaceholder,
-    translationId: stableTranslationId,
-    translationKey: stableTranslationId,
-    pairing: { key: stableTranslationId, locale },
-    sourcePath: contentPath,
-    raw: rawBody,
-    body: {
-      raw: rawBody,
-      html: htmlBody,
-      code: htmlBody
-    },
-    _id: filePath,
-    _raw: {
-      sourceFilePath: filePath,
-      sourceFileName: filePath.slice(filePath.lastIndexOf('/') + 1),
-      sourceFileDir: sourceFileDir(filePath),
-      contentType: 'markdown' as const,
-      flattenedPath: contentPath
-    },
-    __ignoredType: collection === 'posts' ? ('Post' as const) : ('Page' as const),
-    flattenedPath,
-    url: localizedPath(
-      `/${collection === 'posts' ? 'blog' : 'pages'}/${data.slug || flattenedPath}`,
-      locale
-    )
-  };
+    data.translation_status ?? (locale === DEFAULT_LOCALE ? 'source' : 'placeholder');
+  const routeBase = collection === 'posts' ? '/blog' : '/pages';
 
-  return adapted as unknown as Post | Page;
+  /* eslint-disable @typescript-eslint/no-unused-vars -- strip aliases from the record */
+  const { translation_key, translation_id, is_placeholder, type, ghost_id, ...frontmatter } =
+    data;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
+  return {
+    ...frontmatter,
+    collection,
+    locale,
+    translationId:
+      data.translation_id ?? data.translation_key ?? derivedTranslationId(collection, entry.id),
+    isPlaceholder: data.is_placeholder ?? translationStatus === 'placeholder',
+    sourcePath: `${collection}/${entry.id}`,
+    flattenedPath: entry.id,
+    url: localizedPath(`${routeBase}/${data.slug || entry.id}`, locale),
+    body: { raw: entry.body ?? '', html: entry.rendered?.html ?? '' },
+  } as ContentDocument;
 }
 
+// ---------------------------------------------------------------------------
+// Visibility
+// ---------------------------------------------------------------------------
+
+const HIDDEN_STATUSES = ['draft', 'private', 'unpublished', 'scheduled'];
+const HIDDEN_VISIBILITIES = ['private', 'members', 'hidden', 'unlisted'];
+
+/** Public (legacy content predates the status field; an absent status is published). */
+export function isPublished(document: ContentDocument): boolean {
+  return (
+    !HIDDEN_STATUSES.includes(document.status?.toLowerCase() ?? '') &&
+    !HIDDEN_VISIBILITIES.includes(document.visibility?.toLowerCase() ?? '')
+  );
+}
+
+/** Public and not a placeholder: eligible for sitemaps, feeds, llms.txt and indexing. */
+export function isIndexable(document: ContentDocument): boolean {
+  return isPublished(document) && !document.isPlaceholder;
+}
+
+// ---------------------------------------------------------------------------
+// Translation pairing
+// ---------------------------------------------------------------------------
+
+export type Visibility = 'any' | 'published' | 'indexable';
+
+const VISIBILITY_FILTERS: Record<Visibility, (document: ContentDocument) => boolean> = {
+  any: () => true,
+  published: isPublished,
+  indexable: isIndexable,
+};
+
 /**
- * Module-level content cache, primed by {@link loadContent}. The arrays stay
- * mutable so consumers that hold them (and tests that swap the module)
- * observe the same references the source Velite-based adapter exposed.
+ * Every document in `documents` that is `document` or one of its
+ * translations (same collection, same `translationId`) and passes
+ * `visibility`, keyed by locale. The first match per locale wins.
+ * `document` itself is only included when it passes the filter.
  */
-export const allPostsByLocale: Post[] = [];
-export const allPagesByLocale: Page[] = [];
+export function translationsOf<T extends ContentDocument>(
+  document: ContentDocument,
+  documents: readonly T[],
+  visibility: Visibility = 'any'
+): Map<ContentLocale, T> {
+  const keep = VISIBILITY_FILTERS[visibility];
+  const result = new Map<ContentLocale, T>();
+  for (const candidate of documents) {
+    if (
+      candidate.collection !== document.collection ||
+      candidate.translationId !== document.translationId ||
+      result.has(candidate.locale) ||
+      !keep(candidate)
+    ) {
+      continue;
+    }
+    result.set(candidate.locale, candidate);
+  }
+  return result;
+}
 
-/** Existing exports remain the default Chinese content for route compatibility. */
-export const allPosts: Post[] = [];
-export const allPages: Page[] = [];
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
 
-export interface ContentBundle {
+interface ContentBundle {
   posts: Post[];
   pages: Page[];
 }
 
 let contentPromise: Promise<ContentBundle> | null = null;
 
-/**
- * Load both collections once per process and adapt them through
- * {@link adaptDocument}. In the Astro runtime the data comes from
- * `getCollection` (Astro's content layer); under plain `node` (the i18n
- * verification scripts) it falls back to reading the `content/` markdown
- * files directly with gray-matter, producing entries with the same shape as
- * the glob loader.
- */
+/** Load both collections once per process. */
 export function loadContent(): Promise<ContentBundle> {
   if (!contentPromise) {
     contentPromise = loadAllContent().catch((error) => {
@@ -243,31 +236,66 @@ export function loadContent(): Promise<ContentBundle> {
 }
 
 async function loadAllContent(): Promise<ContentBundle> {
-  const [posts, pages] = await Promise.all([loadPosts(), loadPages()]);
-
-  allPostsByLocale.length = 0;
-  allPostsByLocale.push(...posts);
-  allPagesByLocale.length = 0;
-  allPagesByLocale.push(...pages);
-  allPosts.length = 0;
-  allPosts.push(...posts.filter((post) => post.locale === DEFAULT_LOCALE));
-  allPages.length = 0;
-  allPages.push(...pages.filter((page) => page.locale === DEFAULT_LOCALE));
-
-  return { posts, pages };
+  const [postEntries, pageEntries] = await Promise.all([
+    loadRawEntries('posts'),
+    loadRawEntries('pages'),
+  ]);
+  return {
+    posts: postEntries.map((entry) => adaptDocument(entry, 'posts')),
+    pages: pageEntries.map((entry) => adaptDocument(entry, 'pages')),
+  };
 }
 
-async function loadPosts(): Promise<Post[]> {
-  const entries = await loadRawEntries('posts');
-  return entries.map((entry) => adaptDocument(entry, 'posts'));
+/** Posts of every locale, in content-layer order. */
+export async function getAllPosts(): Promise<Post[]> {
+  return (await loadContent()).posts;
 }
 
-async function loadPages(): Promise<Page[]> {
-  const entries = await loadRawEntries('pages');
-  return entries.map((entry) => adaptDocument(entry, 'pages'));
+/** Pages of every locale, in content-layer order. */
+export async function getAllPages(): Promise<Page[]> {
+  return (await loadContent()).pages;
 }
 
-async function loadRawEntries(collection: 'posts' | 'pages'): Promise<RawEntry[]> {
+/** Posts then pages, of every locale. */
+export async function getAllDocuments(): Promise<ContentDocument[]> {
+  const { posts, pages } = await loadContent();
+  return [...posts, ...pages];
+}
+
+export async function getPosts(locale: ContentLocale): Promise<Post[]> {
+  return (await getAllPosts()).filter((post) => post.locale === locale);
+}
+
+export async function getPages(locale: ContentLocale): Promise<Page[]> {
+  return (await getAllPages()).filter((page) => page.locale === locale);
+}
+
+/** The post routed at `/blog/<slug>` (slug or collection-relative path) in `locale`. */
+export async function findPost(slug: string, locale: ContentLocale): Promise<Post | undefined> {
+  return (await getPosts(locale)).find((post) => (post.slug || post.flattenedPath) === slug);
+}
+
+/** The page routed at `/pages/<slug>` in `locale`. */
+export async function findPage(slug: string, locale: ContentLocale): Promise<Page | undefined> {
+  return (await getPages(locale)).find((page) => (page.slug || page.flattenedPath) === slug);
+}
+
+/**
+ * The Astro content-layer entry behind a record, for `render()`. Only
+ * available in the Astro runtime.
+ */
+export async function getContentEntry(document: ContentDocument) {
+  const { getEntry } = await import('astro:content');
+  const entry = await getEntry(document.collection, document.flattenedPath);
+  if (!entry) throw new Error(`No content entry for ${document.sourcePath}`);
+  return entry;
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+async function loadRawEntries(collection: Collection): Promise<RawEntry[]> {
   const astroContent = await resolveAstroContent();
   return astroContent
     ? await astroContent.getCollection(collection)
@@ -275,7 +303,7 @@ async function loadRawEntries(collection: 'posts' | 'pages'): Promise<RawEntry[]
 }
 
 type AstroContentModule = {
-  getCollection: (collection: 'posts' | 'pages') => Promise<RawEntry[]>;
+  getCollection: (collection: Collection) => Promise<RawEntry[]>;
 };
 
 let astroContent: AstroContentModule | null | undefined;
@@ -285,11 +313,10 @@ async function resolveAstroContent(): Promise<AstroContentModule | null> {
   try {
     // `astro:content` is a Vite virtual module that only exists inside the
     // Astro runtime; a static import would break plain-Node consumers (the
-    // i18n verification scripts) at module-load time.
+    // build-gate scripts, Vitest) at module-load time.
     const mod = await import('astro:content');
     astroContent = typeof mod.getCollection === 'function' ? mod : null;
   } catch {
-    // Plain-Node context (verification scripts): fall back to file reads.
     astroContent = null;
   }
   return astroContent;
@@ -310,7 +337,7 @@ type MatterFunction = (input: string) => {
   content: string;
 };
 
-async function loadEntriesFromFiles(collection: 'posts' | 'pages'): Promise<RawEntry[]> {
+async function loadEntriesFromFiles(collection: Collection): Promise<RawEntry[]> {
   // Node builtins: unavailable in the browser and in the Astro client
   // bundle, so they cannot be static imports.
   const { promises: fsp } = await import('node:fs');
@@ -325,7 +352,8 @@ async function loadEntriesFromFiles(collection: 'posts' | 'pages'): Promise<RawE
   const base = path.join(process.cwd(), 'content', collection);
   const files = (await fsp.readdir(base, { recursive: true, encoding: 'utf8' }))
     .map((file) => file.replace(/\\/g, '/'))
-    .filter((file) => file.endsWith('.md'));
+    .filter((file) => file.endsWith('.md'))
+    .sort();
 
   const entries: RawEntry[] = [];
   for (const file of files) {
@@ -337,45 +365,8 @@ async function loadEntriesFromFiles(collection: 'posts' | 'pages'): Promise<RawE
       id: file.replace(/\.md$/, ''),
       body: content,
       data: coerceDates(data),
-      filePath
+      filePath,
     });
   }
   return entries;
-}
-
-export function getPostsByLocale(locale: ContentLocale = DEFAULT_LOCALE): Post[] {
-  return allPostsByLocale.filter((post) => post.locale === locale);
-}
-
-export function getPagesByLocale(locale: ContentLocale = DEFAULT_LOCALE): Page[] {
-  return allPagesByLocale.filter((page) => page.locale === locale);
-}
-
-export interface TranslationPair<T extends Post | Page> {
-  source: T;
-  translation?: T;
-}
-
-export function getTranslationPair<T extends Post | Page>(
-  document: T,
-  documents: readonly T[]
-): TranslationPair<T> {
-  const source = documents.find(
-    (candidate) =>
-      candidate.translationId === document.translationId && candidate.locale === DEFAULT_LOCALE
-  );
-  const translation = documents.find(
-    (candidate) =>
-      candidate.translationId === document.translationId && candidate.locale !== DEFAULT_LOCALE
-  );
-
-  return { source: source ?? document, translation };
-}
-
-export function getPostTranslationPair(post: Post): TranslationPair<Post> {
-  return getTranslationPair(post, allPostsByLocale);
-}
-
-export function getPageTranslationPair(page: Page): TranslationPair<Page> {
-  return getTranslationPair(page, allPagesByLocale);
 }

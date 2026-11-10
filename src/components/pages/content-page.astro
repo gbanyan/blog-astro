@@ -1,14 +1,21 @@
 ---
-import type { Component } from 'astro';
-import type { Page } from '@/lib/content';
-import type { Dictionary } from '@/lib/i18n/dictionaries';
-import type { Locale } from '@/lib/locales';
-import { getDocumentLocale, absoluteUrl, documentPath, localizedPath } from '@/lib/locales';
-import { siteConfig } from '@/lib/config';
-import { getTagSlug } from '@/lib/tags';
-import { socialImageUrl, documentOgUrl } from '@/lib/og';
-import MermaidDiagrams from '../mermaid-diagrams.astro';
+/**
+ * Static content page (`/pages/[slug]`, `/en/pages/[slug]`): looks up the
+ * page, renders its markdown, and assembles head + structured data + layout.
+ * Route files only bind the locale.
+ */
+import { render } from 'astro:content';
+import { findPage, getAllPages, getContentEntry } from '@/lib/content';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { localizedPath, type Locale } from '@/lib/locales';
 import { hasMermaidBlock } from '@/lib/mermaid';
+import { metadataForDocument } from '@/lib/seo';
+import { pageSchema } from '@/lib/structured-data';
+import { tagPath } from '@/lib/tags';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import JsonLd from '../json-ld.astro';
+import MermaidDiagrams from '../mermaid-diagrams.astro';
 import { ReadingProgress } from '../reading-progress';
 import ScrollReveal from '@/components/scroll-reveal.astro';
 import { DevEnvDeviceHero } from '../dev-env-device-hero';
@@ -19,112 +26,93 @@ import PostLayout from '../post-layout.astro';
 import ContentImage from '../content-image.astro';
 
 interface Props {
-  page: Page;
   locale: Locale;
-  dictionary: Dictionary;
-  hasToc: boolean;
-  Content: Component;
+  /** Route param: the page's `slug` frontmatter, else its collection-relative path. */
+  slug: string;
 }
 
-const { page, locale, dictionary, hasToc, Content } = Astro.props;
+const { locale, slug } = Astro.props;
+const page = await findPage(slug, locale);
+if (!page) throw new Error(`Unknown page slug: ${slug} (${locale})`);
 
-// Only ship the Mermaid script when the page has a diagram — same
-// detection as the blog post route.
-const hasMermaid = hasMermaidBlock(page.body?.html ?? '');
-
-// Declarative layout/hero metadata — no slug string-matching.
-const isDevice = page.layout === 'device';
-const pageUrl = absoluteUrl(documentPath(page, locale));
-const imageUrl = socialImageUrl(page.feature_image) ?? documentOgUrl(page);
-
-// WebPage Schema
-const webPageSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: page.title,
-  description: page.description || page.title,
-  url: pageUrl,
-  image: imageUrl,
-  inLanguage: getDocumentLocale(page),
-  isPartOf: {
-    '@type': 'WebSite',
-    name: dictionary.brand.title,
-    url: siteConfig.url
-  },
-  ...(page.published_at ? { datePublished: page.published_at } : {}),
-  ...(page.updated_at ? { dateModified: page.updated_at } : {})
-};
-
-const slug = page.slug || page.flattenedPath;
+const dictionary = getDictionary(locale);
+const { Content, headings } = await render(await getContentEntry(page));
+const hasToc = headings.some((h) => h.depth === 2 || h.depth === 3);
+// Only ship the Mermaid script when the page has a diagram.
+const hasMermaid = hasMermaidBlock(page.body.html);
+const head = metadataForDocument(page, await getAllPages());
+const publishedDate = page.published_at ? new Date(page.published_at) : null;
 ---
-<script type="application/ld+json" set:html={JSON.stringify(webPageSchema)} />
-<ReadingProgress client:idle />
-<ScrollReveal />
-<PostLayout hasToc={hasToc} contentKey={slug} wide={isDevice} locale={locale}>
-  <div class={isDevice ? 'space-y-4' : 'space-y-8'}>
-    <!-- Main content area for Pagefind indexing -->
-    <div data-pagefind-body>
-      <SectionDividerStatic>
-        <header class={isDevice ? 'mb-4 space-y-3 text-center' : 'mb-6 space-y-4 text-center'}>
-          {page.published_at && (
-            <p class="type-small text-slate-500 dark:text-slate-400">
-              <time datetime={new Date(page.published_at as Date | string).toISOString()}>
-                {new Date(page.published_at as Date | string).toLocaleDateString(
-                  getDocumentLocale(page)
-                )}
-              </time>
-            </p>
-          )}
-          <h1 class="type-display font-bold leading-tight text-slate-900 dark:text-slate-50">
-            {page.title}
-          </h1>
-          {page.tags && (
-            <div class="flex flex-wrap justify-center gap-2 pt-2" data-pagefind-meta="tags">
-              {page.tags.map((t) => (
-                <a
-                  href={localizedPath(`/tags/${encodeURIComponent(getTagSlug(t))}`, locale)}
-                  class="tag-chip rounded-full bg-accent-soft px-3 py-1 text-sm text-accent-textLight dark:bg-slate-800 dark:text-slate-100"
-                >
-                  #{t}
-                </a>
-              ))}
-            </div>
-          )}
-        </header>
-      </SectionDividerStatic>
+<Layout head={head} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <JsonLd schema={pageSchema(page)} />
+    <ReadingProgress client:idle />
+    <ScrollReveal />
+    <PostLayout hasToc={hasToc} contentKey={slug} locale={locale}>
+      <div class="space-y-8">
+        <!-- Main content area for Pagefind indexing -->
+        <div data-pagefind-body>
+          <SectionDividerStatic>
+            <header class="mb-6 space-y-4 text-center">
+              {publishedDate && (
+                <p class="type-small text-slate-500 dark:text-slate-400">
+                  <time datetime={publishedDate.toISOString()}>
+                    {publishedDate.toLocaleDateString(page.locale)}
+                  </time>
+                </p>
+              )}
+              <h1 class="type-display font-bold leading-tight text-slate-900 dark:text-slate-50">
+                {page.title}
+              </h1>
+              {page.tags && (
+                <div class="flex flex-wrap justify-center gap-2 pt-2" data-pagefind-meta="tags">
+                  {page.tags.map((t) => (
+                    <a
+                      href={localizedPath(tagPath(t), locale)}
+                      class="tag-chip rounded-full bg-accent-soft px-3 py-1 text-sm text-accent-textLight dark:bg-slate-800 dark:text-slate-100"
+                    >
+                      #{t}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </header>
+          </SectionDividerStatic>
 
-      <SectionDividerStatic>
-        <article
-          data-toc-content={slug}
-          class="prose prose-lg prose-slate mx-auto max-w-none dark:prose-invert"
-        >
-          {page.hero === 'dev-env' ? (
-            <DevEnvDeviceHero ariaLabel={dictionary.devices.devEnvAria} />
-          ) : page.hero === 'homelab' ? (
-            <HomeLabDeviceHero ariaLabel={dictionary.devices.homeLabAria} />
-          ) : (
-            page.feature_image && (
-              <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
-                <ContentImage
-                  src={page.feature_image.replace('../assets', '/assets')}
-                  alt=""
-                  width={1200}
-                  height={600}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-                  loading="eager"
-                  fetchpriority="high"
-                  class="w-full rounded-xl shadow-lg"
-                />
+          <SectionDividerStatic>
+            <article
+              data-toc-content={slug}
+              class="prose prose-lg prose-slate mx-auto max-w-none dark:prose-invert"
+            >
+              {page.hero === 'dev-env' ? (
+                <DevEnvDeviceHero ariaLabel={dictionary.devices.devEnvAria} />
+              ) : page.hero === 'homelab' ? (
+                <HomeLabDeviceHero ariaLabel={dictionary.devices.homeLabAria} />
+              ) : (
+                page.feature_image && (
+                  <div class="-mx-4 mb-8 transition-all duration-500 sm:-mx-12 lg:-mx-20 group-[.toc-open]:lg:-mx-4">
+                    <ContentImage
+                      src={page.feature_image}
+                      alt=""
+                      width={1200}
+                      height={600}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                      loading="eager"
+                      fetchpriority="high"
+                      class="w-full rounded-xl shadow-lg"
+                    />
+                  </div>
+                )
+              )}
+              <div>
+                <Content />
               </div>
-            )
-          )}
-          <div>
-            <Content />
-          </div>
-          {hasMermaid && <MermaidDiagrams labels={dictionary.mermaid} />}
-          <CodeCopy labels={dictionary.common} />
-        </article>
-      </SectionDividerStatic>
-    </div>
-  </div>
-</PostLayout>
+              {hasMermaid && <MermaidDiagrams labels={dictionary.mermaid} />}
+              <CodeCopy labels={dictionary.common} />
+            </article>
+          </SectionDividerStatic>
+        </div>
+      </div>
+    </PostLayout>
+  </LayoutShell>
+</Layout>

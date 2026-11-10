@@ -16,48 +16,10 @@ export const DEFAULT_LOCALE: Locale = (SUPPORTED_LOCALES as readonly string[]).i
   ? (siteConfig.defaultLocale as Locale)
   : seedDefaultLocale;
 
-export interface LocalizedDocumentLike {
-  locale?: string;
-  language?: string;
-  translation_key?: string;
-  translationKey?: string;
-  translation_id?: string;
-  translationId?: string;
-  translation_status?: string;
-  translationStatus?: string;
-  is_placeholder?: boolean;
-  isPlaceholder?: boolean;
-  url?: string;
-  status?: string;
-}
-
 export function normalizeLocale(value: string | undefined): Locale | undefined {
   if (isLocale(value)) return value;
   if (value?.toLowerCase() === 'zh-tw') return 'zh-TW';
   return value?.toLowerCase() === 'en' ? 'en' : undefined;
-}
-
-export function getDocumentLocale(document: LocalizedDocumentLike): Locale {
-  return normalizeLocale(document.locale || document.language) || DEFAULT_LOCALE;
-}
-
-export function getTranslationKey(document: LocalizedDocumentLike): string | undefined {
-  return (
-    document.translation_key ||
-    document.translationKey ||
-    document.translation_id ||
-    document.translationId
-  );
-}
-
-export function isPlaceholderDocument(document: LocalizedDocumentLike): boolean {
-  if (document.isPlaceholder === true || document.is_placeholder === true) return true;
-
-  const translationStatus = document.translationStatus || document.translation_status;
-  if (translationStatus) return translationStatus === 'placeholder';
-
-  // Keep legacy English copies safe until they explicitly declare their status.
-  return getDocumentLocale(document) === 'en';
 }
 
 /**
@@ -75,11 +37,12 @@ export function localizedPath(path: string, locale: Locale): string {
     : `/${locale}${basePath === '/' ? '' : basePath}`;
 }
 
+/** A record's route in `locale` (its own locale by default). */
 export function documentPath(
-  document: LocalizedDocumentLike,
-  locale: Locale = getDocumentLocale(document)
+  document: { url: string; locale: Locale },
+  locale: Locale = document.locale
 ): string {
-  return localizedPath(document.url || '/', locale);
+  return localizedPath(document.url, locale);
 }
 
 export function absoluteUrl(path: string): string {

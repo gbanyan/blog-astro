@@ -1,5 +1,6 @@
 import type { Root } from 'mdast';
 import { visit } from 'unist-util-visit';
+import { contentAssetPath } from './content-assets.ts';
 
 /**
  * Rewrite markdown image URLs that point at the shared content asset
@@ -14,11 +15,7 @@ import { visit } from 'unist-util-visit';
  */
 export function remarkRewriteImageSrcs() {
   const rewrite = (node: { url: string }) => {
-    if (node.url.startsWith('../assets/')) {
-      node.url = node.url.replace('../assets', '/assets');
-    } else if (node.url.startsWith('assets/')) {
-      node.url = `/${node.url.replace(/^\/?/, '')}`;
-    }
+    node.url = contentAssetPath(node.url);
   };
 
   return (tree: Root) => {

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
@@ -9,5 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // Agent worktrees under .claude/ carry their own copies of the tests.
+    exclude: [...configDefaults.exclude, '.claude/**'],
   },
 });

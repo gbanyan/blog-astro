@@ -43,3 +43,6 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 /.serena/
+
+# Agent worktrees (temporary isolated checkouts)
+/.claude/worktrees/

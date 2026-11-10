@@ -1,8 +1,13 @@
 ---
-import { siteConfig } from '@/lib/config';
+/** Blog index (`/blog`, `/en/blog`). Route files only bind the locale. */
 import { getAllPostsSorted } from '@/lib/posts';
 import { getSidebarData } from '@/lib/sidebar-data';
-import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import type { Locale } from '@/lib/locales';
+import { blogIndexSchema } from '@/lib/structured-data';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import JsonLd from '@/components/json-ld.astro';
+import { metadataForSection } from '@/lib/seo';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import SectionDividerStatic from '@/components/section-divider-static.astro';
@@ -17,52 +22,33 @@ interface Props {
 const { locale } = Astro.props;
 const dictionary = getDictionary(locale);
 const posts = await getAllPostsSorted(locale);
-const { tags, aboutUrl, avatarSrc } = getSidebarData(locale);
+const { tags, aboutUrl, avatarSrc } = await getSidebarData(locale);
 // Slim, build-time-computed entries keep the island props small.
 const listEntries = await getPostListEntries(posts);
-
-// Blog schema (source: app/[locale]/blog/page.tsx). `post.url` is already
-// localized for this locale, so `localizedPath(post.url, locale)` is the
-// identity and collapses to `absoluteUrl(post.url)`.
-const blogSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Blog',
-  name: dictionary.common.allPosts,
-  description: dictionary.common.allPostsDescription,
-  url: absoluteUrl(localizedPath('/blog', locale)),
-  inLanguage: locale,
-  blogPost: posts.slice(0, 10).map((post) => ({
-    '@type': 'BlogPosting',
-    headline: post.title,
-    url: absoluteUrl(post.url),
-    datePublished: post.published_at,
-    dateModified: post.updated_at || post.published_at,
-    author: {
-      '@type': 'Person',
-      name: siteConfig.author,
-    },
-  })),
-};
 ---
-<section class="space-y-4">
-  <script type="application/ld+json" set:html={JSON.stringify(blogSchema)} />
-  <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
-    <SectionDividerStatic>
-      <header class="space-y-1">
-        <h1 class="type-title font-semibold text-slate-900 dark:text-slate-50">
-          {dictionary.common.allPosts}
-        </h1>
-        <p class="type-small text-slate-500 dark:text-slate-400">
-          {dictionary.common.allPostsDescription}
-        </p>
-      </header>
-    </SectionDividerStatic>
-    <ScrollReveal />
-    <PostListWithControls
-      client:load
-      posts={listEntries}
-      locale={locale}
-      initialSearch=""
-    />
-  </SidebarLayout>
-</section>
+<Layout head={metadataForSection('blog', locale)} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <section class="space-y-4">
+      <JsonLd schema={blogIndexSchema(locale, posts)} />
+      <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
+        <SectionDividerStatic>
+          <header class="space-y-1">
+            <h1 class="type-title font-semibold text-slate-900 dark:text-slate-50">
+              {dictionary.common.allPosts}
+            </h1>
+            <p class="type-small text-slate-500 dark:text-slate-400">
+              {dictionary.common.allPostsDescription}
+            </p>
+          </header>
+        </SectionDividerStatic>
+        <ScrollReveal />
+        <PostListWithControls
+          client:load
+          posts={listEntries}
+          locale={locale}
+          initialSearch=""
+        />
+      </SidebarLayout>
+    </section>
+  </LayoutShell>
+</Layout>

@@ -1,9 +1,7 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { imageSize } from 'image-size';
 import type { Post } from './content';
+import { contentAssetPath, contentAssetSize } from './content-assets';
 import { postCoverSrc, toPostListEntry } from './post-list';
 import type { PostListEntry, PostListThumbnail } from './post-list';
 
@@ -15,37 +13,15 @@ import type { PostListEntry, PostListThumbnail } from './post-list';
 // it was transformed AND never "referenced" — and reading any property of the
 // imported metadata proxy (e.g. `image.width`) counts as a reference. So the
 // metadata objects must only ever be handed to `getImage()` / `<Image>`;
-// intrinsic sizes are read from disk instead (`contentImageSize`).
+// intrinsic sizes are read from disk instead (`contentAssetSize`).
 const images = import.meta.glob<{ default: ImageMetadata }>(
   '/content/assets/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG}'
 );
 
-/** `../assets/x.jpg` → `/assets/x.jpg`; other values pass through. */
-export function normalizeContentAssetSrc(src: string): string {
-  return src.replace(/^\.\.\/assets\//, '/assets/');
-}
-
 /** Astro image metadata for a local content asset (`/assets/...`), if optimizable. */
 export async function loadContentImage(src: string): Promise<ImageMetadata | undefined> {
-  const load = images[`/content${normalizeContentAssetSrc(src)}`];
+  const load = images[`/content${contentAssetPath(src)}`];
   return load ? (await load()).default : undefined;
-}
-
-const sizeCache = new Map<string, { width: number; height: number } | undefined>();
-
-/** Intrinsic size of a local content asset, read from disk (see note above). */
-export function contentImageSize(src: string): { width: number; height: number } | undefined {
-  const normalized = normalizeContentAssetSrc(src);
-  if (sizeCache.has(normalized)) return sizeCache.get(normalized);
-  let size: { width: number; height: number } | undefined;
-  try {
-    const result = imageSize(readFileSync(path.join(process.cwd(), 'content', normalized)));
-    if (result.width && result.height) size = { width: result.width, height: result.height };
-  } catch {
-    size = undefined;
-  }
-  sizeCache.set(normalized, size);
-  return size;
 }
 
 // List thumbnails render in a 96×96 box (mobile) / 160px-wide box stretched to
@@ -60,7 +36,7 @@ const thumbnailCache = new Map<string, Promise<PostListThumbnail | undefined>>()
 /** Build-time WebP thumbnail srcset for a post cover; original as fallback. */
 export function getPostThumbnail(src: string | undefined): Promise<PostListThumbnail | undefined> {
   if (!src) return Promise.resolve(undefined);
-  const normalized = normalizeContentAssetSrc(src);
+  const normalized = contentAssetPath(src);
   let pending = thumbnailCache.get(normalized);
   if (!pending) {
     pending = createThumbnail(normalized);
@@ -72,7 +48,7 @@ export function getPostThumbnail(src: string | undefined): Promise<PostListThumb
 async function createThumbnail(src: string): Promise<PostListThumbnail> {
   const fallback: PostListThumbnail = { src, width: 320, height: 240 };
   const image = await loadContentImage(src);
-  const size = contentImageSize(src);
+  const size = contentAssetSize(src);
   if (!image || !size) return fallback;
 
   const width = THUMB_WIDTHS[THUMB_WIDTHS.length - 1];

@@ -1,15 +1,8 @@
-import { getPostsByLocale } from '@/lib/content';
-import type { ContentLocale } from '@/lib/content';
+import { getPosts } from '@/lib/content';
+import type { ContentLocale, Post } from '@/lib/content';
 
-/**
- * Normalize a tag into a URL-safe slug.
- * Kept in a separate module so the client sidebar never imports the
- * `"use cache"` helpers from `lib/posts.ts` into the browser bundle.
- */
+/** Normalize a tag (or an existing slug — the mapping is idempotent) into its URL slug. */
 export function getTagSlug(tag: string): string {
-  // Normalize spaces and convert to lowercase
-  // Replace multiple spaces/dashes with single dash
-  // Next.js will handle URL encoding automatically, so we don't encode here
   return tag
     .toLowerCase()
     .replace(/\s+/g, '-')
@@ -17,25 +10,47 @@ export function getTagSlug(tag: string): string {
     .trim();
 }
 
-/**
- * Tags with post counts, sorted by count descending.
- * Synchronous — safe to call from the client-side sidebar.
- */
-export function getAllTagsWithCount(
-  locale?: ContentLocale
-): { tag: string; slug: string; count: number }[] {
+/** Default-locale route of a tag archive (pass through `localizedPath` for other locales). */
+export function tagPath(tag: string): string {
+  return `/tags/${encodeURIComponent(getTagSlug(tag))}`;
+}
+
+export interface TagCount {
+  tag: string;
+  slug: string;
+  count: number;
+}
+
+/** Tags of `posts` with post counts, most-used first (ties alphabetical). */
+export function countTags(posts: readonly Post[]): TagCount[] {
   const map = new Map<string, number>();
-  for (const post of getPostsByLocale(locale)) {
-    if (!post.tags) continue;
-    for (const postTag of post.tags) {
-      map.set(postTag, (map.get(postTag) ?? 0) + 1);
+  for (const post of posts) {
+    for (const tag of post.tags ?? []) {
+      map.set(tag, (map.get(tag) ?? 0) + 1);
     }
   }
 
   return Array.from(map.entries())
     .map(([tag, count]) => ({ tag, slug: getTagSlug(tag), count }))
-    .sort((a, b) => {
-      if (b.count === a.count) return a.tag.localeCompare(b.tag);
-      return b.count - a.count;
-    });
+    .sort((a, b) => (b.count === a.count ? a.tag.localeCompare(b.tag) : b.count - a.count));
+}
+
+/** Tag counts for every post of `locale`. */
+export async function getTagsWithCount(locale: ContentLocale): Promise<TagCount[]> {
+  return countTags(await getPosts(locale));
+}
+
+/** The original label of the first tag in `posts` whose slug is `slug` (the slug itself if none). */
+export function tagLabelForSlug(slug: string, posts: readonly Post[]): string {
+  for (const post of posts) {
+    for (const tag of post.tags ?? []) {
+      if (getTagSlug(tag) === slug) return tag;
+    }
+  }
+  return slug;
+}
+
+/** Posts of `posts` carrying a tag whose slug is `slug`. */
+export function postsWithTag<T extends Post>(slug: string, posts: readonly T[]): T[] {
+  return posts.filter((post) => post.tags?.some((tag) => getTagSlug(tag) === slug));
 }

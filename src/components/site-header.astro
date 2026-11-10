@@ -8,10 +8,10 @@
  * `LocalizedLink` links are pre-localized here with `localizedPath` before
  * being handed to islands.
  */
-import { loadContent, allPagesByLocale, allPostsByLocale, getPagesByLocale } from '@/lib/content';
+import { getAllDocuments, getPages, translationsOf } from '@/lib/content';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { LOCALE_ROUTE_MANIFEST, type LocaleRouteManifest } from '@/lib/locale-switcher';
-import { documentPath, localizedPath, type Locale } from '@/lib/locales';
+import { DEFAULT_LOCALE, documentPath, localizedPath, type Locale } from '@/lib/locales';
 import ThemeToggle from './theme-toggle.astro';
 import { NavMenu, type IconKey, type NavLinkItem } from './nav-menu';
 import { SiteHeaderSearch } from './site-header-search';
@@ -24,31 +24,22 @@ interface Props {
 }
 
 const { locale, currentPath, recentPosts = [] } = Astro.props;
-await loadContent();
 
 const dictionary = getDictionary(locale);
-const pages = getPagesByLocale(locale)
+const pages = (await getPages(locale))
   .slice()
   .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
+// Every routed zh-TW document with an English translation gets an explicit
+// switcher pair; everything else falls back to its section.
 const localeManifest: LocaleRouteManifest = { ...LOCALE_ROUTE_MANIFEST };
-const allDocuments = [...allPagesByLocale, ...allPostsByLocale];
-// First English match wins (same as the former linear `find`).
-const englishByTranslationId = new Map<string, (typeof allDocuments)[number]>();
-for (const candidate of allDocuments) {
-  if (candidate.locale === 'en' && !englishByTranslationId.has(candidate.translationId)) {
-    englishByTranslationId.set(candidate.translationId, candidate);
-  }
-}
+const allDocuments = await getAllDocuments();
 for (const document of allDocuments) {
-  if (document.locale !== 'zh-TW') continue;
-  const translation = englishByTranslationId.get(document.translationId);
+  if (document.locale !== DEFAULT_LOCALE) continue;
+  const translation = translationsOf(document, allDocuments).get('en');
   if (translation) {
-    const defaultPath = documentPath(document, 'zh-TW');
-    localeManifest[defaultPath] = {
-      defaultPath,
-      en: documentPath(translation, 'en'),
-    };
+    const defaultPath = documentPath(document);
+    localeManifest[defaultPath] = { defaultPath, en: documentPath(translation) };
   }
 }
 
@@ -59,7 +50,7 @@ const aboutChildren: NavLinkItem[] = [
   ...pages
     .filter((page) => page.nav_category === 'about')
     .map((page) => ({
-      key: page._id,
+      key: page.sourcePath,
       href: localizedPath(page.url, locale),
       label: page.nav_label || page.title,
       iconKey: (page.icon as IconKey) ?? 'user',
@@ -70,7 +61,7 @@ const aboutChildren: NavLinkItem[] = [
 const deviceChildren: NavLinkItem[] = pages
   .filter((page) => page.nav_category === 'device')
   .map((page) => ({
-    key: page._id,
+    key: page.sourcePath,
     href: localizedPath(page.url, locale),
     label: page.nav_label || page.title,
     iconKey: (page.icon as IconKey) ?? 'device',

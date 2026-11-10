@@ -1,7 +1,8 @@
 ---
 import { Image } from 'astro:assets';
 import type { HTMLAttributes } from 'astro/types';
-import { contentImageSize, loadContentImage, normalizeContentAssetSrc } from '@/lib/content-images';
+import { loadContentImage } from '@/lib/content-images';
+import { contentAssetPath, contentAssetSize } from '@/lib/content-assets';
 
 interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'height'> {
   src: string;
@@ -16,9 +17,9 @@ interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'h
 // the imported metadata object — touching its properties would mark the
 // original as referenced and keep it in `_astro/` (see content-images.ts).
 const { src, alt, width, height, widths = [480, 800, 1200, 1600], ...attributes } = Astro.props;
-const normalized = normalizeContentAssetSrc(src);
+const normalized = contentAssetPath(src);
 const image = await loadContentImage(normalized);
-const size = image ? contentImageSize(normalized) : undefined;
+const size = image ? contentAssetSize(normalized) : undefined;
 const outputWidth = size ? Math.min(width, size.width) : width;
 const outputWidths = size
   ? [...new Set([...widths.filter((w) => w <= size.width), outputWidth])].sort((a, b) => a - b)

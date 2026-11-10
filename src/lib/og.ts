@@ -1,8 +1,10 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_OG_IMAGE, siteConfig } from '@/lib/config';
-import type { Page, Post } from '@/lib/content';
+import type { ContentDocument } from '@/lib/content';
+import { contentAssetPath } from '@/lib/content-assets';
 import type { Locale } from '@/lib/i18n/config';
+import { absoluteUrl } from '@/lib/locales';
 
 /**
  * Shared social-card URL selection used by metadata and page renderers.
@@ -14,8 +16,12 @@ export function socialImageUrl(featureImage?: string): string | null {
   if (!featureImage) return null;
   // Absolute remote URLs are already fully-qualified; keep them intact.
   if (/^https?:\/\//.test(featureImage)) return featureImage;
-  const path = featureImage.replace('../assets', '/assets');
-  return `${siteConfig.url}${path.startsWith('/') ? '' : '/'}${path}`;
+  return absoluteUrl(contentAssetPath(featureImage));
+}
+
+/** The social card for a document: its feature image, else its build-time OG card. */
+export function documentSocialImage(doc: ContentDocument): string {
+  return socialImageUrl(doc.feature_image) ?? documentOgUrl(doc);
 }
 
 /**
@@ -23,10 +29,13 @@ export function socialImageUrl(featureImage?: string): string | null {
  * /og/[...slug].png endpoint (satori + resvg at build). Paths are unique
  * because flattenedPath already carries the en/ segment for English docs.
  */
-export function documentOgUrl(doc: Post | Page): string {
-  const collection = doc.__ignoredType === 'Page' ? 'pages' : 'posts';
-  const url = new URL(`/og/${collection}/${doc.flattenedPath}.png`, siteConfig.url);
-  return url.toString();
+export function documentOgUrl(doc: Pick<ContentDocument, 'collection' | 'flattenedPath'>): string {
+  return absoluteUrl(ogCardPath(doc));
+}
+
+/** Site-relative path of a document's build-time OG card (also the /og route's param source). */
+export function ogCardPath(doc: Pick<ContentDocument, 'collection' | 'flattenedPath'>): string {
+  return `/og/${doc.collection}/${doc.flattenedPath}.png`;
 }
 
 /**

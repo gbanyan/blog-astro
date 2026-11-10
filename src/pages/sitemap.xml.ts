@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-import { loadContent } from '@/lib/content';
+import { getAllDocuments } from '@/lib/content';
 import { rootSitemapXml } from '@/lib/seo';
 
 /**
@@ -9,9 +9,7 @@ import { rootSitemapXml } from '@/lib/seo';
  * without charset, `max-age=0, must-revalidate`).
  */
 export const GET: APIRoute = async () => {
-  await loadContent();
-
-  return new Response(rootSitemapXml(), {
+  return new Response(rootSitemapXml(await getAllDocuments()), {
     headers: {
       'Content-Type': 'application/xml',
       'Cache-Control': 'public, max-age=0, must-revalidate',

@@ -16,6 +16,7 @@ import { siteConfig } from '@/lib/config';
 import { localizedPath, type Locale } from '@/lib/locales';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getBuildTimeMastodonAccountId } from '@/lib/mastodon';
+import { tagPath } from '@/lib/tags';
 import { MastodonFeed } from './mastodon-feed';
 
 interface Props {
@@ -129,7 +130,7 @@ const aboutLines = dictionary.brand.aboutShort ? dictionary.brand.aboutShort.spl
           const sizeClass = count >= 5 ? 'font-semibold' : count >= 3 ? 'font-medium' : '';
           return (
             <a
-              href={localizedPath(`/tags/${slug}`, locale)}
+              href={localizedPath(tagPath(slug), locale)}
               class={`${sizeClass} tag-chip rounded-full px-2 py-0.5 transition ${
                 readingVariant
                   ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-100 hover:text-accent-textLight dark:bg-slate-900/70 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800 dark:hover:text-accent-textDark'

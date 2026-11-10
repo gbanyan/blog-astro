@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 
-import { loadContent } from '@/lib/content';
+import { getAllPosts } from '@/lib/content';
 import { generateRss } from '@/lib/machine-readable';
 import type { Locale } from '@/lib/locales';
 
@@ -11,9 +11,7 @@ import type { Locale } from '@/lib/locales';
 const locale: Locale = 'en';
 
 export const GET: APIRoute = async () => {
-  await loadContent();
-
-  return new Response(generateRss(locale), {
+  return new Response(generateRss(await getAllPosts(), locale), {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',

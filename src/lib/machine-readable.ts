@@ -1,17 +1,21 @@
 import { statSync } from 'node:fs';
-import path from 'node:path';
 
-import { allPagesByLocale, allPostsByLocale } from '@/lib/content';
+import type { ContentDocument, Page, Post } from '@/lib/content';
+import { contentAssetFile } from '@/lib/content-assets';
 import { siteConfig } from '@/lib/config';
 import {
   absoluteUrl,
   documentPath,
   localeToRss,
   localizedEndpoint,
+  localizedPath,
   type Locale,
 } from '@/lib/locales';
-import { documentLanguageLinks, localeDocuments } from '@/lib/seo';
+import { socialImageUrl } from '@/lib/og';
+import { newestFirst } from '@/lib/posts';
+import { documentDescription, documentLanguageLinks, localeDocuments } from '@/lib/seo';
 import { getDictionary } from '@/lib/i18n/dictionaries';
+import { escapeXml } from '@/lib/xml';
 
 /**
  * Enclosure tag for the post's feature image, if any. Reads the mirrored
@@ -19,18 +23,18 @@ import { getDictionary } from '@/lib/i18n/dictionaries';
  * length 0 (strictly invalid, but tolerated by most feed readers).
  */
 function enclosureFor(featureImage?: string): string {
-  if (!featureImage) return '';
-  const publicRel = featureImage.replace('../assets', 'assets');
+  const url = socialImageUrl(featureImage);
+  if (!featureImage || !url) return '';
   let length = 0;
   try {
-    length = statSync(path.join(process.cwd(), 'public', publicRel)).size;
+    const file = contentAssetFile(featureImage);
+    if (file) length = statSync(file).size;
   } catch {
-    // mirrored asset not present locally — leave length 0
+    // asset not present locally — leave length 0
   }
   const ext = featureImage.split('.').pop()?.toLowerCase() ?? '';
   const type =
     ext === 'webp' ? 'image/webp' : ext === 'png' ? 'image/png' : 'image/jpeg';
-  const url = absoluteUrl(featureImage.replace('../assets', '/assets'));
   return `<enclosure url="${escapeXml(url)}" length="${length}" type="${type}"/>`;
 }
 
@@ -46,15 +50,10 @@ function publishedValue(value?: Date | string): string {
 }
 
 
-export function generateRss(locale: Locale): string {
+/** RSS 2.0 feed of the 20 newest indexable `posts` in `locale`. */
+export function generateRss(posts: readonly Post[], locale: Locale): string {
   const dictionary = getDictionary(locale);
-  const sortedPosts = localeDocuments(allPostsByLocale, locale)
-    .sort((a, b) => {
-      const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-      const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
-      return dateB - dateA;
-    })
-    .slice(0, 20);
+  const sortedPosts = newestFirst(localeDocuments(posts, locale)).slice(0, 20);
 
   const feedUrl = localizedEndpoint('/feed.xml', locale);
   const siteUrl = siteConfig.url;
@@ -79,7 +78,7 @@ export function generateRss(locale: Locale): string {
       <title>${escapeXml(post.title)}</title>
       <link>${escapeXml(postUrl)}</link>
       <guid isPermaLink="true">${escapeXml(postUrl)}</guid>
-      <description>${escapeXml(post.description || post.custom_excerpt || post.title)}</description>
+      <description>${escapeXml(documentDescription(post))}</description>
       ${post.body?.html ? `<content:encoded><![CDATA[${post.body.html}]]></content:encoded>` : ''}
       <pubDate>${pubDate}</pubDate>
       <dc:creator>${escapeXml(post.authors?.[0] || siteConfig.author)}</dc:creator>
@@ -95,16 +94,15 @@ export function generateRss(locale: Locale): string {
   return rss;
 }
 
-export function generateLlms(locale: Locale): string {
+/** llms.txt for `locale` over `documents` (posts and pages of every locale). */
+export function generateLlms(documents: readonly ContentDocument[], locale: Locale): string {
   const dictionary = getDictionary(locale);
-  const posts = localeDocuments(allPostsByLocale, locale)
-    .sort((a, b) => {
-      const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-      const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
-      return dateB - dateA;
-    });
-  const pages = localeDocuments(allPagesByLocale, locale);
-  const documents = [...allPostsByLocale, ...allPagesByLocale];
+  const posts = newestFirst(
+    localeDocuments(documents, locale).filter((d): d is Post => d.collection === 'posts')
+  );
+  const pages = localeDocuments(documents, locale).filter(
+    (d): d is Page => d.collection === 'pages'
+  );
   const tags = Array.from(
     new Set(posts.flatMap((post) => post.tags || []))
   );
@@ -169,8 +167,8 @@ ${pages
 ## Navigation
 
 - Homepage: ${locale === 'zh-TW' ? siteConfig.url : absoluteUrl(`/${locale}`)}
-- All Articles: ${absoluteUrl(documentPath({ url: '/blog' }, locale))}
-- Tags: ${absoluteUrl(documentPath({ url: '/tags' }, locale))}
+- All Articles: ${absoluteUrl(localizedPath('/blog', locale))}
+- Tags: ${absoluteUrl(localizedPath('/tags', locale))}
 - RSS Feed: ${localizedEndpoint('/feed.xml', locale)}
 
 ## Contact & Social
@@ -191,13 +189,4 @@ This content is created by ${siteConfig.author} and may be cited with proper att
 `;
 
   return content;
-}
-
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }

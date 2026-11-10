@@ -1,8 +1,14 @@
 ---
+/** Home page (`/`, `/en`). Route files only bind the locale. */
 import { siteConfig } from '@/lib/config';
 import { getAllPostsSorted } from '@/lib/posts';
 import { getSidebarData } from '@/lib/sidebar-data';
-import { absoluteUrl, localizedPath, type Locale } from '@/lib/locales';
+import { localizedPath, type Locale } from '@/lib/locales';
+import { homeSchema } from '@/lib/structured-data';
+import Layout from '@/layouts/layout.astro';
+import LayoutShell from '@/layouts/layout-shell.astro';
+import JsonLd from '@/components/json-ld.astro';
+import { metadataForSection } from '@/lib/seo';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import SidebarLayout from '@/components/sidebar-layout.astro';
 import { HeroSection } from '@/components/hero-section';
@@ -14,75 +20,59 @@ interface Props {
 
 const { locale } = Astro.props;
 const dictionary = getDictionary(locale);
-const { tags, aboutUrl, avatarSrc } = getSidebarData(locale);
+const { tags, aboutUrl, avatarSrc } = await getSidebarData(locale);
 const posts = (await getAllPostsSorted(locale)).slice(0, siteConfig.postsPerPage);
-
-// CollectionPage schema for homepage (source: app/[locale]/page.tsx).
-const collectionPageSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'CollectionPage',
-  name: `${siteConfig.name} — ${dictionary.common.latestPosts}`,
-  description: dictionary.brand.description,
-  url: absoluteUrl(localizedPath('/', locale)),
-  inLanguage: locale,
-  isPartOf: {
-    '@type': 'WebSite',
-    name: dictionary.brand.title,
-    url: absoluteUrl(localizedPath('/', locale)),
-  },
-  about: {
-    '@type': 'Blog',
-    name: dictionary.brand.title,
-    description: dictionary.brand.description,
-  },
-};
 ---
-<script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />
-<section class="pb-4 sm:pb-8">
-  <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc} variant="reading">
-    <div class="space-y-10 sm:space-y-12 lg:space-y-14">
-      <h1 class="sr-only">
-        {siteConfig.name} — {dictionary.common.latestPosts} — {dictionary.brand.tagline}
-      </h1>
-      <HeroSection
-        client:idle
-        title={`${siteConfig.name} — ${dictionary.common.latestPosts}`}
-        tagline={dictionary.brand.tagline}
-        ariaLabel={dictionary.terminal.ariaLabel(
-          `${siteConfig.name} — ${dictionary.common.latestPosts}`,
-          dictionary.brand.tagline
-        )}
-      />
+<Layout head={metadataForSection('home', locale)} locale={locale}>
+  <LayoutShell locale={locale} currentPath={Astro.url.pathname}>
+    <JsonLd schema={homeSchema(locale)} />
+    <section class="pb-4 sm:pb-8">
+      <SidebarLayout locale={locale} tags={tags} aboutUrl={aboutUrl} avatarSrc={avatarSrc} variant="reading">
+        <div class="space-y-10 sm:space-y-12 lg:space-y-14">
+          <h1 class="sr-only">
+            {siteConfig.name} — {dictionary.common.latestPosts} — {dictionary.brand.tagline}
+          </h1>
+          <HeroSection
+            client:idle
+            title={`${siteConfig.name} — ${dictionary.common.latestPosts}`}
+            tagline={dictionary.brand.tagline}
+            ariaLabel={dictionary.terminal.ariaLabel(
+              `${siteConfig.name} — ${dictionary.common.latestPosts}`,
+              dictionary.brand.tagline
+            )}
+          />
 
-      <section aria-labelledby="latest-posts-heading">
-        <header class="mb-6 flex items-end justify-between gap-4 border-b border-slate-200/80 pb-3 dark:border-slate-800">
-          <h2
-            id="latest-posts-heading"
-            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl"
-          >
-            {dictionary.common.latestPosts}
-          </h2>
-          <a
-            href={localizedPath('/blog', locale)}
-            class="shrink-0 text-sm font-medium text-accent-textLight transition-colors hover:text-accent dark:text-accent-textDark dark:hover:text-accent-textDark"
-          >
-            {dictionary.common.allPosts} →
-          </a>
-        </header>
-        <!-- Static timeline: ports TimelineWrapper's mounted-state markup
-             (spine + per-item connector ticks) without a client island. -->
-        <div class="relative pl-6 md:pl-8">
-          <span class="pointer-events-none absolute left-2 top-0 h-full w-[2px] rounded-full bg-accent/40 md:left-3" aria-hidden="true"></span>
-          <div class="space-y-4">
-            {posts.map((post, index) => (
-              <div class="relative pl-5 sm:pl-8">
-                <span class="pointer-events-none absolute left-0 top-1/2 h-px w-5 -translate-x-full -translate-y-1/2 bg-gradient-to-r from-transparent via-accent/30 to-transparent sm:w-8" aria-hidden="true"></span>
-                <PostListItem post={post} priority={index === 0} variant="reading" />
+          <section aria-labelledby="latest-posts-heading">
+            <header class="mb-6 flex items-end justify-between gap-4 border-b border-slate-200/80 pb-3 dark:border-slate-800">
+              <h2
+                id="latest-posts-heading"
+                class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl"
+              >
+                {dictionary.common.latestPosts}
+              </h2>
+              <a
+                href={localizedPath('/blog', locale)}
+                class="shrink-0 text-sm font-medium text-accent-textLight transition-colors hover:text-accent dark:text-accent-textDark dark:hover:text-accent-textDark"
+              >
+                {dictionary.common.allPosts} →
+              </a>
+            </header>
+            <!-- Static timeline: ports TimelineWrapper's mounted-state markup
+                 (spine + per-item connector ticks) without a client island. -->
+            <div class="relative pl-6 md:pl-8">
+              <span class="pointer-events-none absolute left-2 top-0 h-full w-[2px] rounded-full bg-accent/40 md:left-3" aria-hidden="true"></span>
+              <div class="space-y-4">
+                {posts.map((post, index) => (
+                  <div class="relative pl-5 sm:pl-8">
+                    <span class="pointer-events-none absolute left-0 top-1/2 h-px w-5 -translate-x-full -translate-y-1/2 bg-gradient-to-r from-transparent via-accent/30 to-transparent sm:w-8" aria-hidden="true"></span>
+                    <PostListItem post={post} priority={index === 0} variant="reading" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
-  </SidebarLayout>
-</section>
+      </SidebarLayout>
+    </section>
+  </LayoutShell>
+</Layout>

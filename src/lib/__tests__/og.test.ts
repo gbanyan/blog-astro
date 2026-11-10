@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultOgImage, documentOgUrl, socialImageUrl } from '@/lib/og';
-import type { Page, Post } from '@/lib/content';
+import { makePage, makePost } from './fixtures';
 
 describe('socialImageUrl', () => {
   it('rewrites ../assets to the /assets public root', () => {
@@ -20,26 +20,21 @@ describe('socialImageUrl', () => {
     );
   });
 
+  it('percent-encodes non-ASCII asset names like every other absolute URL', () => {
+    expect(socialImageUrl('../assets/封面.jpg')).toBe(
+      'https://blog.gbanyan.net/assets/%E5%B0%81%E9%9D%A2.jpg'
+    );
+  });
+
   it('prefixes plain relative paths with a leading slash', () => {
     expect(socialImageUrl('feature.png')).toBe('https://blog.gbanyan.net/feature.png');
   });
 });
 
 describe('documentOgUrl', () => {
-  const post = {
-    __ignoredType: 'Post',
-    flattenedPath: 'my-post',
-  } as unknown as Post;
-
-  const enPost = {
-    __ignoredType: 'Post',
-    flattenedPath: 'en/my-post',
-  } as unknown as Post;
-
-  const page = {
-    __ignoredType: 'Page',
-    flattenedPath: 'about',
-  } as unknown as Page;
+  const post = makePost('my-post');
+  const enPost = makePost('en/my-post');
+  const page = makePage('about');
 
   it('builds the static /og path from the collection and flattenedPath', () => {
     expect(documentOgUrl(post)).toBe('https://blog.gbanyan.net/og/posts/my-post.png');

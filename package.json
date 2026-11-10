@@ -15,8 +15,7 @@
     "dev": "astro dev",
     "build": "npm run sync-assets && npm run check-i18n-content && npm run check-assets && npm run build-display-font && astro build && npm run finalize-dist && npx pagefind --site dist --output-path dist/_pagefind",
     "preview": "astro preview",
-    "check-i18n": "node scripts/check-i18n.mjs --adapter scripts/i18n-validation-adapter.mjs",
-    "check-i18n-content": "node scripts/check-i18n-content.mjs",
+    "check-i18n-content": "vitest run src/lib/__tests__/content-invariants.test.ts",
     "sync-assets": "node scripts/sync-assets.mjs",
     "build-display-font": "node scripts/build-display-font.mjs",
     "finalize-dist": "node scripts/finalize-dist.mjs",
@@ -24,7 +23,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "check-delivery": "node scripts/check-worker-delivery.mjs",
-    "verify": "npm run build && npm run check-i18n && npm run lint && npm run test"
+    "verify": "npm run build && npm run lint && npm run test"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.1",

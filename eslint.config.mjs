@@ -16,7 +16,7 @@ import tseslint from 'typescript-eslint';
  *  - `.astro/` generated Astro cache/types
  *  - `content/` git submodule (separate personal-blog repo, markdown only)
  *  - `public/` synced assets (copied from content/assets)
- *  - `.superpowers/` agent tooling
+ *  - `.superpowers/`, `.claude/` agent tooling (incl. worktree checkouts)
  *  - `scripts/` plain-node `.mjs` build tooling — kept OUT of the lint gate
  *    on purpose (no TS, no React). They are still type-checked by
  *    `tsc --noEmit` via tsconfig `include`. Revisit if they grow.
@@ -39,6 +39,7 @@ export default tseslint.config(
       '.astro/**',
       '.wrangler/**',
       '.playwright-cli/**',
+      '.claude/**',
       'content/**',
       'public/**',
       '.superpowers/**',
