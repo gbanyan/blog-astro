@@ -8,17 +8,21 @@
 @source "../../content";
 
 /* Tailwind v4 CSS-first theme configuration */
-@theme {
-  /* Custom colors (CSS variable references) */
+
+/* Accent colors are runtime CSS variables (set from PUBLIC_COLOR_* by
+   layout.astro); `inline` makes utilities reference them directly instead
+   of emitting self-referencing theme variables (`reference`: never emit
+   them into :root — the runtime values come from the page). */
+@theme inline reference {
   --color-accent: var(--color-accent);
   --color-accent-soft: var(--color-accent-soft);
   --color-accent-textLight: var(--color-accent-text-light);
   --color-accent-textDark: var(--color-accent-text-dark);
+}
 
-  /* Custom font families */
-  --font-serif-eng: var(--font-display-latin), serif;
-  --font-serif-cn: var(--font-display-cjk), "Songti SC", "Noto Serif TC", "SimSun", serif;
-
+/* Motion tokens: the single source for ease-snappy / duration-180 /
+   duration-260, used both as utilities and as var() in custom CSS. */
+@theme {
   /* Custom transition timing */
   --ease-snappy: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -27,14 +31,6 @@
   /* Custom transition durations */
   --duration-180: 180ms;
   --duration-260: 260ms;
-
-  /* Custom box shadows */
-  --shadow-lifted: 0 12px 30px -14px rgba(0, 0, 0, 0.35);
-  --shadow-outline: 0 0 0 1px color-mix(in oklch, var(--color-accent) 25%, transparent);
-
-  /* Custom keyframes */
-  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
-  --animate-float-soft: float-soft 12s ease-in-out infinite;
 }
 
 /* Calm ClientRouter view transitions (astro:transitions) */
@@ -105,12 +101,6 @@ html[data-astro-transition='back']::view-transition-new(root) {
   .repo-card-enter {
     animation: none;
   }
-}
-
-@keyframes float-soft {
-  0% { transform: translate3d(0,0,0) scale(1); }
-  50% { transform: translate3d(4px,-6px,0) scale(1.03); }
-  100% { transform: translate3d(0,0,0) scale(1); }
 }
 
 /* Dev env device hero - Mac mini + 螢幕 3D mockup */
@@ -523,21 +513,6 @@ html[data-astro-transition='back']::view-transition-new(root) {
 
 .dark .dev-env-svg-tux {
   color: #cbd5e1;
-}
-
-.dev-env-terminal-line {
-  height: 8px;
-  margin-bottom: 6px;
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 2px;
-}
-
-.dev-env-terminal-line.short {
-  width: 60%;
-}
-
-.dark .dev-env-terminal-line {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .dev-env-prompt {
@@ -1365,18 +1340,10 @@ html[data-astro-transition='back']::view-transition-new(root) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mastodon-skeleton-shimmer {
-    background: #e2e8f0;
-  }
-
   .mastodon-skeleton-shimmer::after {
     animation: none;
     transform: translateX(0);
     background: none;
-  }
-
-  .dark .mastodon-skeleton-shimmer {
-    background: #1e293b;
   }
 }
 
@@ -1395,9 +1362,6 @@ html[data-astro-transition='back']::view-transition-new(root) {
   /* Native scrollbars / form controls follow the active theme */
   color-scheme: light;
 
-  --motion-duration-short: 180ms;
-  --motion-duration-medium: 260ms;
-  --motion-ease-snappy: cubic-bezier(0.32, 0.72, 0, 1);
   --card-translate-y: -6px;
   --line-height-body: clamp(1.5, 0.15vw + 1.45, 1.65);
   --font-weight-regular: 400;
@@ -1555,26 +1519,6 @@ body {
   color: var(--color-ink-body);
 }
 
-@keyframes timeline-scroll {
-  0% {
-    transform: translate(-50%, -10%);
-    opacity: 0;
-  }
-
-  15% {
-    opacity: 1;
-  }
-
-  85% {
-    opacity: 1;
-  }
-
-  100% {
-    transform: translate(-50%, 110%);
-    opacity: 0;
-  }
-}
-
 /* Scroll reveal (scroll-reveal.astro). Content is visible by default — with
    JS off, before the script runs, and for anything already on screen. The
    script only marks blocks that start below the fold as `reveal-pending`,
@@ -1607,7 +1551,7 @@ body {
 /* Subtle hover for article elements */
 .prose blockquote {
   @apply transition-transform transition-shadow duration-180 ease-snappy;
-  border-left: 4px solid var(--color-accent, #2563eb);
+  border-left: 4px solid var(--color-accent);
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(124, 58, 237, 0.1));
   padding: 1.2rem 1.5rem;
   font-style: italic;
@@ -1634,14 +1578,6 @@ body {
   font-family: 'Times New Roman', 'Noto Serif TC', serif;
   color: rgba(37, 99, 235, 0.25);
   pointer-events: none;
-}
-
-.prose pre {
-  @apply transition-transform transition-shadow duration-180 ease-snappy;
-}
-
-.prose pre:hover {
-  @apply -translate-y-0.5 shadow-md;
 }
 
 /* Typography plugin prose overrides */
@@ -1704,10 +1640,6 @@ body {
 }
 
 /* Dark mode prose overrides (replaces prose-dark) */
-.dark .prose {
-  color: var(--color-ink-body);
-}
-
 .dark .prose strong,
 .dark .prose b {
   color: #f8fafc;
@@ -1733,47 +1665,10 @@ body {
   color: inherit !important;
 }
 
-.hero-title {
-  position: relative;
-  display: inline-flex;
-  overflow: hidden;
-}
-
-.hero-title__sweep {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, transparent 10%, rgba(59, 130, 246, 0.35) 45%, transparent 90%);
-  transform: translateX(-120%);
-  animation: hero-sweep 4s var(--motion-ease-snappy) infinite;
-  pointer-events: none;
-}
-
-
-@keyframes hero-sweep {
-  0% {
-    transform: translateX(-120%);
-    opacity: 0;
-  }
-
-  30% {
-    opacity: 0.4;
-  }
-
-  60% {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-
-  100% {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-}
-
 .tag-chip {
   position: relative;
   overflow: hidden;
-  transition: color var(--motion-duration-short) var(--motion-ease-snappy), background-color var(--motion-duration-short) var(--motion-ease-snappy);
+  transition: color var(--duration-180) var(--ease-snappy), background-color var(--duration-180) var(--ease-snappy);
 }
 
 .tag-chip::after {
@@ -1785,7 +1680,7 @@ body {
   height: 2px;
   background: currentColor;
   opacity: 0.5;
-  transition: width var(--motion-duration-short) var(--motion-ease-snappy), left var(--motion-duration-short) var(--motion-ease-snappy);
+  transition: width var(--duration-180) var(--ease-snappy), left var(--duration-180) var(--ease-snappy);
 }
 
 .tag-chip:hover::after,
@@ -1798,63 +1693,6 @@ body {
 .toc-sidebar {
   transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
   will-change: opacity, transform;
-}
-
-.toc-sidebar-enter {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.toc-sidebar-enter-active {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.toc-sidebar-exit {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.toc-sidebar-exit-active {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.toc-mobile {
-  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-  will-change: opacity, transform;
-}
-
-.toc-mobile-enter {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.toc-mobile-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toc-mobile-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toc-mobile-exit-active {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.toc-button {
-  transition: all 0.2s ease-in-out;
-}
-
-.toc-button:active {
-  transform: scale(0.95);
-}
-
-.toc-button:hover {
-  transform: scale(1.05);
 }
 
 @layer components {
@@ -1912,10 +1750,10 @@ body {
   }
 
   .motion-card {
-    transition: transform var(--motion-duration-medium) var(--motion-ease-snappy),
-      box-shadow var(--motion-duration-medium) var(--motion-ease-snappy),
-      background-color var(--motion-duration-medium) var(--motion-ease-snappy),
-      border-color var(--motion-duration-medium) var(--motion-ease-snappy);
+    transition: transform var(--duration-260) var(--ease-snappy),
+      box-shadow var(--duration-260) var(--ease-snappy),
+      background-color var(--duration-260) var(--ease-snappy),
+      border-color var(--duration-260) var(--ease-snappy);
   }
 
   .motion-card:hover {
@@ -1923,8 +1761,8 @@ body {
   }
 
   .motion-link {
-    transition: color var(--motion-duration-short) var(--motion-ease-snappy),
-      transform var(--motion-duration-short) var(--motion-ease-snappy);
+    transition: color var(--duration-180) var(--ease-snappy),
+      transform var(--duration-180) var(--ease-snappy);
   }
 }
 
@@ -1942,8 +1780,13 @@ body {
    frame (border, radius, padding) is ours. */
 .prose pre {
   @apply overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700;
+  @apply transition-transform transition-shadow duration-180 ease-snappy;
   padding: 1rem 1.2rem;
   margin: 1.5rem 0;
+}
+
+.prose pre:hover {
+  @apply -translate-y-0.5 shadow-md;
 }
 
 .prose pre > code {
