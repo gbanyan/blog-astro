@@ -69,6 +69,9 @@ export interface NavLinkItem {
  * class strings (not interpolated) so Tailwind sees every variant. English
  * labels are wider, so the English header switches at `xl`.
  */
+/** Same widths as Tailwind's `lg` / `xl` (rem follows the user's font size). */
+const DESKTOP_QUERIES = { lg: '(min-width: 64rem)', xl: '(min-width: 80rem)' } as const;
+
 const DESKTOP_CLASSES = {
   lg: { mobileOnly: 'lg:hidden', nav: 'hidden lg:flex lg:items-center lg:gap-3', dropdown: 'lg:block' },
   xl: { mobileOnly: 'xl:hidden', nav: 'hidden xl:flex xl:items-center xl:gap-3', dropdown: 'xl:block' },
@@ -110,6 +113,17 @@ export function NavMenu({ items, labels, currentPath, desktopFrom = 'lg' }: NavM
   const mounted = useSyncExternalStore(subscribeToClientMount, () => true, () => false);
   const normalizedCurrentPath = normalizeRoutePath(routeKey);
   const close = () => setOpenPathname(null);
+
+  // The overlay and its button are hidden from the desktop breakpoint up;
+  // close the menu there so its scroll lock and aria-expanded don't linger.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia(DESKTOP_QUERIES[desktopFrom]);
+    const onChange = () => {
+      if (desktopQuery.matches) setOpenPathname(null);
+    };
+    desktopQuery.addEventListener('change', onChange);
+    return () => desktopQuery.removeEventListener('change', onChange);
+  }, [desktopFrom]);
   const { dialogRef, handleKeyDown } = useModalDialog(open, close);
 
   const isRouteActive = (href?: string) => {

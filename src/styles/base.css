@@ -132,6 +132,32 @@ html[data-astro-transition='back']::view-transition-new(root) {
 .post-layout.toc-open .post-layout-content {
   max-width: 48rem;
 }
+
+/* Full-bleed media (post covers, device heroes): below sm a plain 1rem
+   edge-to-edge bleed; from sm up it bleeds past the content column by up to
+   --media-bleed but always stops 1.5rem short of the viewport edge, so it is
+   never cropped (`100%` is the content column width, `100vw` the viewport). */
+.media-bleed {
+  margin-inline: -1rem;
+}
+@media (min-width: 40rem) {
+  .media-bleed {
+    --media-bleed: 3rem;
+    margin-inline: min(0px, max(calc(-1 * var(--media-bleed)), calc((100% - 100vw) / 2 + 1.5rem)));
+  }
+}
+@media (min-width: 64rem) {
+  .media-bleed {
+    --media-bleed: 5rem;
+  }
+  .post-layout.toc-open .media-bleed {
+    --media-bleed: 1rem;
+  }
+  .post-layout-wide .media-bleed,
+  .post-layout-wide.toc-open .media-bleed {
+    --media-bleed: 0rem;
+  }
+}
 @media (min-width: 64rem) {
   .post-layout-grid {
     grid-template-columns: 1fr 0rem;
