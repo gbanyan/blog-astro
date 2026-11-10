@@ -18,6 +18,11 @@ interface TerminalWindowProps {
   ariaLabel: string;
   /** Skip typing animation, show all at once */
   reducedMotion?: boolean;
+  /** Render the finished terminal immediately (intro already played, or
+   *  reduced motion) — no typing, no cursor blink. */
+  skipIntro?: boolean;
+  /** Called once when the typing intro has fully played. */
+  onIntroComplete?: () => void;
   /** Start the terminal text only after the Matrix intro has finished. */
   startTyping?: boolean;
   /** Keep the Matrix layer mounted during its fade-out transition. */
@@ -39,16 +44,18 @@ export function TerminalWindow({
   tagline,
   ariaLabel,
   reducedMotion = false,
+  skipIntro = false,
+  onIntroComplete,
   startTyping = true,
   matrixVisible = true,
   matrixOpacity = 1,
   className = '',
 }: TerminalWindowProps) {
-  const [phase, setPhase] = useState<Phase>('prompt');
-  const [displayedPrompt, setDisplayedPrompt] = useState('');
-  const [displayedLine1, setDisplayedLine1] = useState('');
-  const [displayedLine2, setDisplayedLine2] = useState('');
-  const [displayedPrompt2, setDisplayedPrompt2] = useState('');
+  const [typedPhase, setPhase] = useState<Phase>('prompt');
+  const [typedPrompt, setDisplayedPrompt] = useState('');
+  const [typedLine1, setDisplayedLine1] = useState('');
+  const [typedLine2, setDisplayedLine2] = useState('');
+  const [typedPrompt2, setDisplayedPrompt2] = useState('');
   const [displayedAscii, setDisplayedAscii] = useState<string[]>([]);
   const [showCursor, setShowCursor] = useState(true);
 
@@ -57,11 +64,20 @@ export function TerminalWindow({
   const line1 = `${title}`;
   const line2 = tagline;
 
+  // skipIntro derives the finished frame directly (no state churn), so it
+  // can switch on after mount without stepping through the phases.
+  const phase: Phase = skipIntro ? 'done' : typedPhase;
+  const displayedPrompt = skipIntro ? prompt : typedPrompt;
+  const displayedLine1 = skipIntro ? line1 : typedLine1;
+  const displayedLine2 = skipIntro ? line2 : typedLine2;
+  const displayedPrompt2 = skipIntro ? prompt2 : typedPrompt2;
+  const typingActive = startTyping && !skipIntro;
+
   const charDelay = reducedMotion ? 0 : 50;
   const lineDelay = reducedMotion ? 0 : 400;
   const asciiLineDelay = reducedMotion ? 0 : 80;
   const asciiLines =
-    reducedMotion && (phase === 'typing-ascii' || phase === 'done')
+    skipIntro || (reducedMotion && (phase === 'typing-ascii' || phase === 'done'))
       ? ASCII_ART
       : displayedAscii;
   const cursorVisible = reducedMotion || phase === 'done' ? true : showCursor;
@@ -93,68 +109,93 @@ export function TerminalWindow({
   );
 
   useEffect(() => {
-    if (!startTyping || phase !== 'prompt') return;
+    if (!typingActive || typedPhase !== 'prompt') return;
 
-      const cleanup = typeString(prompt, setDisplayedPrompt, () => {
-        setTimeout(() => setPhase('typing-line1'), lineDelay);
-      });
-      return cleanup;
-  }, [phase, prompt, typeString, lineDelay, startTyping]);
-
-  useEffect(() => {
-    if (!startTyping || phase !== 'typing-line1') return;
-
-      const cleanup = typeString(line1, setDisplayedLine1, () => {
-        setTimeout(() => setPhase('typing-line2'), lineDelay);
-      });
-      return cleanup;
-  }, [phase, line1, typeString, lineDelay, startTyping]);
+    let timeoutId: number | undefined;
+    const cleanup = typeString(prompt, setDisplayedPrompt, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-line1'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
+  }, [typedPhase, prompt, typeString, lineDelay, typingActive]);
 
   useEffect(() => {
-    if (!startTyping || phase !== 'typing-line2') return;
+    if (!typingActive || typedPhase !== 'typing-line1') return;
 
-      const cleanup = typeString(line2, setDisplayedLine2, () => {
-        setTimeout(() => setPhase('prompt2'), lineDelay);
-      });
-      return cleanup;
-  }, [phase, line2, typeString, lineDelay, startTyping]);
-
-  useEffect(() => {
-    if (!startTyping || phase !== 'prompt2') return;
-
-      const cleanup = typeString(prompt2, setDisplayedPrompt2, () => {
-        setTimeout(() => setPhase('typing-ascii'), lineDelay);
-      });
-      return cleanup;
-  }, [phase, prompt2, typeString, lineDelay, startTyping]);
+    let timeoutId: number | undefined;
+    const cleanup = typeString(line1, setDisplayedLine1, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-line2'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
+  }, [typedPhase, line1, typeString, lineDelay, typingActive]);
 
   useEffect(() => {
-    if (!startTyping || phase !== 'typing-ascii') return;
+    if (!typingActive || typedPhase !== 'typing-line2') return;
 
-      if (reducedMotion) {
-        setTimeout(() => setPhase('done'), lineDelay);
-        return;
+    let timeoutId: number | undefined;
+    const cleanup = typeString(line2, setDisplayedLine2, () => {
+      timeoutId = window.setTimeout(() => setPhase('prompt2'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
+  }, [typedPhase, line2, typeString, lineDelay, typingActive]);
+
+  useEffect(() => {
+    if (!typingActive || typedPhase !== 'prompt2') return;
+
+    let timeoutId: number | undefined;
+    const cleanup = typeString(prompt2, setDisplayedPrompt2, () => {
+      timeoutId = window.setTimeout(() => setPhase('typing-ascii'), lineDelay);
+    });
+    return () => {
+      cleanup?.();
+      window.clearTimeout(timeoutId);
+    };
+  }, [typedPhase, prompt2, typeString, lineDelay, typingActive]);
+
+  useEffect(() => {
+    if (!typingActive || typedPhase !== 'typing-ascii') return;
+
+    let timeoutId: number | undefined;
+    if (reducedMotion) {
+      timeoutId = window.setTimeout(() => setPhase('done'), lineDelay);
+      return () => window.clearTimeout(timeoutId);
+    }
+    let lineIndex = 0;
+    const id = setInterval(() => {
+      if (lineIndex < ASCII_ART.length) {
+        setDisplayedAscii((prev) => [...prev, ASCII_ART[lineIndex]]);
+        lineIndex++;
+      } else {
+        clearInterval(id);
+        timeoutId = window.setTimeout(() => setPhase('done'), lineDelay);
       }
-      let lineIndex = 0;
-      const id = setInterval(() => {
-        if (lineIndex < ASCII_ART.length) {
-          setDisplayedAscii((prev) => [...prev, ASCII_ART[lineIndex]]);
-          lineIndex++;
-        } else {
-          clearInterval(id);
-          setTimeout(() => setPhase('done'), lineDelay);
-        }
-      }, asciiLineDelay);
-      return () => clearInterval(id);
-  }, [phase, asciiLineDelay, lineDelay, reducedMotion, startTyping]);
+    }, asciiLineDelay);
+    return () => {
+      clearInterval(id);
+      window.clearTimeout(timeoutId);
+    };
+  }, [typedPhase, asciiLineDelay, lineDelay, reducedMotion, typingActive]);
+
+  // Report a fully played intro (not a skipped one) exactly once.
+  useEffect(() => {
+    if (typingActive && typedPhase === 'done') onIntroComplete?.();
+  }, [typedPhase, typingActive, onIntroComplete]);
 
   // Blinking cursor
   useEffect(() => {
-    if (startTyping && !reducedMotion && phase !== 'done') {
+    if (typingActive && !reducedMotion && phase !== 'done') {
       const id = setInterval(() => setShowCursor((c) => !c), 530);
       return () => clearInterval(id);
     }
-  }, [phase, reducedMotion, startTyping]);
+  }, [phase, reducedMotion, typingActive]);
 
   return (
     <div
@@ -166,7 +207,7 @@ export function TerminalWindow({
         className="pointer-events-none absolute inset-0 opacity-20 transition-opacity duration-500 ease-out dark:opacity-30"
         aria-hidden="true"
       >
-        {matrixVisible && !reducedMotion && (
+        {matrixVisible && !reducedMotion && !skipIntro && (
           <MatrixRain
             className="h-full w-full"
             opacity={matrixOpacity}
@@ -187,13 +228,13 @@ export function TerminalWindow({
 
       {/* Terminal content */}
       <div className="relative z-10 min-h-0 flex-1 overflow-hidden px-4 py-4 font-mono text-sm sm:px-5 sm:py-5 sm:text-base lg:px-6 lg:py-6 lg:text-lg">
-        {startTyping && <>
+        {(startTyping || skipIntro) && <>
         <div className="text-slate-600 dark:text-slate-300">
           <span className="text-emerald-600 dark:text-emerald-400">~</span>
           <span className="text-slate-500"> $ </span>
           <span>{displayedPrompt}</span>
           {phase === 'prompt' && cursorVisible && (
-            <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+            <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
           )}
         </div>
 
@@ -201,7 +242,7 @@ export function TerminalWindow({
           <div className="mt-2 text-slate-900 dark:text-slate-100">
             {displayedLine1}
             {phase === 'typing-line1' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -210,7 +251,7 @@ export function TerminalWindow({
           <div className="mt-1 text-slate-600 dark:text-slate-300">
             {displayedLine2}
             {phase === 'typing-line2' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -221,7 +262,7 @@ export function TerminalWindow({
             <span className="text-slate-500"> $ </span>
             <span>{displayedPrompt2}</span>
             {phase === 'prompt2' && cursorVisible && (
-              <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="ml-0.5 inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -232,7 +273,7 @@ export function TerminalWindow({
               <div key={i}>{line}</div>
             ))}
             {phase === 'typing-ascii' && cursorVisible && (
-              <span className="inline-block h-4 w-0.5 animate-pulse bg-emerald-600 dark:bg-emerald-400" />
+              <span className="inline-block h-4 w-0.5 motion-safe:animate-pulse bg-emerald-600 dark:bg-emerald-400" />
             )}
           </div>
         )}
@@ -241,7 +282,7 @@ export function TerminalWindow({
           <div className="mt-2 text-slate-600 dark:text-slate-300">
             <span className="text-emerald-600 dark:text-emerald-400">~</span>
             <span className="text-slate-500"> $ </span>
-            <span className="inline-block h-4 w-4 animate-pulse border-l-2 border-emerald-600 dark:border-emerald-400" />
+            <span className="inline-block h-4 w-4 motion-safe:animate-pulse border-l-2 border-emerald-600 dark:border-emerald-400" />
           </div>
         )}
         </>}

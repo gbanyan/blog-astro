@@ -1,0 +1,175 @@
+/* Base: runtime tokens, body, page-level motion (view transitions, scroll
+   reveal), layout hosts and accessibility helpers. Partial of globals.css. */
+
+:root {
+  /* Native scrollbars / form controls follow the active theme */
+  color-scheme: light;
+
+  --card-translate-y: -6px;
+  --line-height-body: clamp(1.5, 0.15vw + 1.45, 1.65);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-system-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'PingFang TC', 'PingFang SC', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft JhengHei', 'Microsoft YaHei', 'Noto Sans TC', 'Noto Sans SC', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Source Han Sans TC', 'Source Han Sans SC', 'Roboto', 'Ubuntu', 'Cantarell', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Ink palette — warm-tinted neutrals */
+  --color-ink-strong: #1c1917;
+  --color-ink-body: #292524;
+  --color-ink-muted: #57534e;
+
+  font-size: clamp(15px, 0.65vw + 11px, 19px);
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Ink palette — warm-tinted neutrals (dark) */
+  --color-ink-strong: #e7e5e4;
+  --color-ink-body: #d6d3d1;
+  --color-ink-muted: #a8a29e;
+}
+
+@media (min-width: 2560px) {
+  :root {
+    font-size: 20px;
+  }
+}
+
+body {
+  @apply bg-stone-50 text-stone-900 transition-colors duration-200 ease-snappy dark:bg-stone-950 dark:text-stone-100;
+  font-size: 1rem;
+  line-height: var(--line-height-body);
+  font-family: var(--font-system-sans);
+  color: var(--color-ink-body);
+}
+
+/* Calm ClientRouter view transitions (astro:transitions) */
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+}
+@keyframes vt-slide-out-left {
+  to { opacity: 0; transform: translateX(-12px); }
+}
+@keyframes vt-slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+}
+@keyframes vt-slide-out-right {
+  to { opacity: 0; transform: translateX(12px); }
+}
+@keyframes vt-slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+}
+
+::view-transition-old(root) {
+  animation: vt-fade-out 180ms ease-out both;
+}
+::view-transition-new(root) {
+  animation: vt-fade-in 180ms ease-out both;
+}
+
+/* Directional slides. Astro's ClientRouter sets
+   `data-astro-transition="forward" | "back"` on <html> for the duration of
+   each soft navigation (it does not use view-transition types). */
+html[data-astro-transition='forward']::view-transition-old(root) {
+  animation: vt-slide-out-left 180ms ease-out both;
+}
+html[data-astro-transition='forward']::view-transition-new(root) {
+  animation: vt-slide-in-right 180ms ease-out both;
+}
+
+html[data-astro-transition='back']::view-transition-old(root) {
+  animation: vt-slide-out-right 180ms ease-out both;
+}
+html[data-astro-transition='back']::view-transition-new(root) {
+  animation: vt-slide-in-left 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Scroll reveal (scroll-reveal.astro). Content is visible by default — with
+   JS off, before the script runs, and for anything already on screen. The
+   script only marks blocks that start below the fold as `reveal-pending`,
+   then adds `is-visible` as they scroll in, so the hero/LCP is never hidden. */
+.scroll-reveal {
+  transition: opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.scroll-reveal.reveal-pending:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal,
+  .scroll-reveal.reveal-pending:not(.is-visible) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* PostLayout static host: the PostLayoutToc island toggles `toc-open` on the
+   `[data-post-layout]` root to drive these grid/content-width transitions
+   (replaces the source's conditional Tailwind arbitrary classes). */
+.post-layout-content {
+  max-width: 56rem;
+}
+.post-layout-wide .post-layout-content {
+  max-width: 64rem;
+}
+.post-layout.toc-open .post-layout-content {
+  max-width: 48rem;
+}
+@media (min-width: 64rem) {
+  .post-layout-grid {
+    grid-template-columns: 1fr 0rem;
+  }
+  .post-layout.toc-open .post-layout-grid {
+    grid-template-columns: 1fr 16rem;
+  }
+}
+
+/* Static SectionDivider bar (section-divider-static.astro): animates in
+   when the page's scroll-reveal script marks the sibling content reveal
+   visible — mirrors the source island's observer-on-wrapper behavior. */
+.section-divider > .scroll-divider-bar {
+  transform: scaleX(0.5);
+  opacity: 0.3;
+}
+.section-divider:has(> .scroll-reveal.is-visible) > .scroll-divider-bar {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* Skip link (layout-shell.astro): off-screen until keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 1300;
+  transform: translateY(-200%);
+  @apply rounded-md bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-lg ring-2 ring-accent dark:bg-slate-900 dark:text-slate-100;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: none;
+  outline: none;
+}
+
+/* Headings focused programmatically by the TOC (tabindex=-1) keep a ring
+   only for keyboard users. */
+.prose :is(h2, h3)[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}

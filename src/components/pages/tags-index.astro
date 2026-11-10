@@ -35,7 +35,7 @@ const colorClasses = [
     <section class="space-y-6">
       <SidebarLayout locale={locale} tags={sidebarTags} aboutUrl={aboutUrl} avatarSrc={avatarSrc}>
         <SectionDividerStatic>
-          <div class="motion-card rounded-2xl border border-white/40 bg-white/60 p-8 text-center shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/60">
+          <div class="rounded-2xl border border-white/40 bg-white/60 p-8 text-center shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-900/60">
             <div class="inline-flex items-center gap-2 text-accent">
               <!-- FiTag (inlined from react-icons for static markup) -->
               <svg
@@ -72,7 +72,7 @@ const colorClasses = [
               return (
                 <a
                   href={localizedPath(tagPath(slug), locale)}
-                  class="motion-card group flex flex-col rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-slate-900/60"
+                  class="motion-card group flex flex-col rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md hover:shadow-xl dark:border-white/10 dark:bg-slate-900/60"
                 >
                   <span class:list={['mb-3 block h-1.5 w-16 rounded-full bg-gradient-to-r', color]} aria-hidden="true" />
                   <div class="flex items-center justify-between">

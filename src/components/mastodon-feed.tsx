@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { FaMastodon } from 'react-icons/fa';
 import { FiArrowRight } from 'react-icons/fi';
 import {
@@ -46,8 +46,26 @@ function FeedSkeleton() {
   );
 }
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+function subscribeToReducedMotion(callback: () => void) {
+  const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+  mediaQuery.addEventListener('change', callback);
+  return () => mediaQuery.removeEventListener('change', callback);
+}
+
+/** Mastodon's API returns the status language (ISO 639) when known. */
+type StatusWithLanguage = MastodonStatus & { language?: string | null };
+
 /** Client-fetched status list. */
 function StatusListContent({ statuses, locale, labels }: { statuses: MastodonStatus[] | null; locale: Locale; labels: Dictionary['mastodon'] }) {
+  // gifv attachments are silent loops: autoplay them only when the visitor
+  // has not asked for reduced motion (otherwise offer play controls).
+  const reducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    () => true
+  );
 
   if (!statuses || statuses.length === 0) {
     return (
@@ -61,7 +79,7 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
     <div className="space-y-3">
       {statuses.map((status) => {
         // Handle boosts (reblogs)
-        const displayStatus = status.reblog || status;
+        const displayStatus: StatusWithLanguage = status.reblog || status;
         const content = stripHtml(displayStatus.content);
         const truncated = truncateText(content, 180);
         const relativeTime = formatRelativeTime(status.created_at, locale);
@@ -84,7 +102,10 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
               )}
 
               {/* Content */}
-              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+              <p
+                lang={displayStatus.language ?? undefined}
+                className="whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200"
+              >
                 {truncated}
               </p>
 
@@ -124,7 +145,8 @@ function StatusListContent({ statuses, locale, labels }: { statuses: MastodonSta
                           <video
                             src={att.url}
                             poster={att.preview_url ?? undefined}
-                            autoPlay
+                            autoPlay={!reducedMotion}
+                            controls={reducedMotion}
                             loop
                             muted
                             playsInline
