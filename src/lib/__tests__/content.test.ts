@@ -84,3 +84,19 @@ describe('translationsOf', () => {
     expect(translationsOf(zh, [zh, en, duplicate]).get('en')).toBe(en);
   });
 });
+
+describe('adaptDocument edge cases', () => {
+  it('keeps a placeholder status even when is_placeholder is false', () => {
+    const doc = adaptDocument(
+      { id: 'en/a', data: { title: 'A', locale: 'en', is_placeholder: false, translation_status: 'placeholder' } },
+      'posts'
+    );
+    expect(doc.isPlaceholder).toBe(true);
+  });
+
+  it('rejects an unsupported locale instead of publishing it as zh-TW', () => {
+    expect(() => adaptDocument({ id: 'a', data: { title: 'A', locale: 'ja' } }, 'posts')).toThrow(
+      /Unsupported locale/
+    );
+  });
+});

@@ -5,7 +5,7 @@
  * rects, forwards numbers, and writes the resulting transform.
  *
  * The markup and class names are a contract with the `.mermaid-*` rules in
- * src/styles/globals.css — keep them stable.
+ * src/styles/prose.css — keep them stable.
  */
 import {
   INITIAL_VIEW,

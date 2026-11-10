@@ -130,7 +130,10 @@ export function adaptDocument(entry: RawEntry, collection: 'pages'): Page;
 export function adaptDocument(entry: RawEntry, collection: Collection): ContentDocument;
 export function adaptDocument(entry: RawEntry, collection: Collection): ContentDocument {
   const { data } = entry;
-  const locale = normalizeLocale(data.locale) ?? DEFAULT_LOCALE;
+  const locale = data.locale ? normalizeLocale(data.locale) : DEFAULT_LOCALE;
+  if (!locale) {
+    throw new Error(`Unsupported locale "${data.locale}" in ${collection}/${entry.id}`);
+  }
   const translationStatus =
     data.translation_status ?? (locale === DEFAULT_LOCALE ? 'source' : 'placeholder');
   const routeBase = collection === 'posts' ? '/blog' : '/pages';
@@ -146,7 +149,9 @@ export function adaptDocument(entry: RawEntry, collection: Collection): ContentD
     locale,
     translationId:
       data.translation_id ?? data.translation_key ?? derivedTranslationId(collection, entry.id),
-    isPlaceholder: data.is_placeholder ?? translationStatus === 'placeholder',
+    // Either signal marks a placeholder; `is_placeholder: false` cannot
+    // override an explicit `translation_status: placeholder`.
+    isPlaceholder: data.is_placeholder === true || translationStatus === 'placeholder',
     sourcePath: `${collection}/${entry.id}`,
     flattenedPath: entry.id,
     url: localizedPath(`${routeBase}/${data.slug || entry.id}`, locale),

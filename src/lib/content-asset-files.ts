@@ -24,12 +24,17 @@ export function contentAssetFile(src: string): string | null {
   return null;
 }
 
-const sizeCache = new Map<string, { width: number; height: number } | undefined>();
+const sizeCache = new Map<string, { width: number; height: number }>();
 
-/** Intrinsic pixel size of a content asset, read from disk (cached); undefined when unknown. */
+/**
+ * Intrinsic pixel size of a content asset, read from disk; undefined when
+ * unknown. Hits are cached; misses are not, so an asset added during
+ * `astro dev` is picked up on the next render.
+ */
 export function contentAssetSize(src: string): { width: number; height: number } | undefined {
   const publicPath = contentAssetPath(src);
-  if (sizeCache.has(publicPath)) return sizeCache.get(publicPath);
+  const cached = sizeCache.get(publicPath);
+  if (cached) return cached;
   let size: { width: number; height: number } | undefined;
   const file = contentAssetFile(publicPath);
   if (file) {
@@ -40,6 +45,6 @@ export function contentAssetSize(src: string): { width: number; height: number }
       size = undefined;
     }
   }
-  sizeCache.set(publicPath, size);
+  if (size) sizeCache.set(publicPath, size);
   return size;
 }
