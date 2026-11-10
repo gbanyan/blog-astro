@@ -13,7 +13,35 @@ interface HeroSectionProps {
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const MATRIX_DURATION = 1800;
 const MATRIX_FADE_DURATION = 500;
-type IntroPhase = 'matrix' | 'transition' | 'typing';
+const INTRO_PLAYED_KEY = 'home-intro-played';
+/**
+ * `pending` is the server render and the hydration render (an empty terminal,
+ * no rain), so hydration always matches; a post-mount effect then picks
+ * `matrix` (first visit this session) or `final` (intro already played).
+ */
+type IntroPhase = 'pending' | 'matrix' | 'transition' | 'typing' | 'final';
+
+// Module state survives ClientRouter soft navigations within the document,
+// and covers browsers where sessionStorage is unavailable.
+let introPlayedThisDocument = false;
+
+function hasPlayedIntro(): boolean {
+  if (introPlayedThisDocument) return true;
+  try {
+    return window.sessionStorage.getItem(INTRO_PLAYED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markIntroPlayed() {
+  introPlayedThisDocument = true;
+  try {
+    window.sessionStorage.setItem(INTRO_PLAYED_KEY, '1');
+  } catch {
+    // Storage blocked: the module flag still covers this document.
+  }
+}
 
 function subscribeToReducedMotion(callback: () => void) {
   const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -31,7 +59,14 @@ export function HeroSection({ title, tagline, ariaLabel }: HeroSectionProps) {
     getReducedMotion,
     () => false
   );
-  const [introPhase, setIntroPhase] = useState<IntroPhase>('matrix');
+  const [introPhase, setIntroPhase] = useState<IntroPhase>('pending');
+
+  // Play the Matrix + typing intro once per browser session; later visits
+  // (full loads or ClientRouter navigations) show the finished terminal.
+  useEffect(() => {
+    if (introPhase !== 'pending') return;
+    setIntroPhase(hasPlayedIntro() ? 'final' : 'matrix');
+  }, [introPhase]);
 
   useEffect(() => {
     if (reducedMotion || introPhase !== 'matrix') return;
@@ -53,8 +88,11 @@ export function HeroSection({ title, tagline, ariaLabel }: HeroSectionProps) {
     return () => window.clearTimeout(id);
   }, [introPhase]);
 
-  const startTyping = reducedMotion || introPhase === 'typing';
-  const matrixVisible = !reducedMotion && introPhase !== 'typing';
+  // Reduced motion and a replayed visit both render the final frame at once.
+  const showFinal = reducedMotion || introPhase === 'final';
+  const startTyping = !showFinal && introPhase === 'typing';
+  const matrixVisible =
+    !showFinal && (introPhase === 'matrix' || introPhase === 'transition');
   const matrixOpacity = introPhase === 'matrix' ? 1 : 0;
 
   return (
@@ -68,6 +106,8 @@ export function HeroSection({ title, tagline, ariaLabel }: HeroSectionProps) {
           tagline={tagline}
           ariaLabel={ariaLabel}
           reducedMotion={reducedMotion}
+          skipIntro={showFinal}
+          onIntroComplete={markIntroPlayed}
           startTyping={startTyping}
           matrixVisible={matrixVisible}
           matrixOpacity={matrixOpacity}
