@@ -1,0 +1,193 @@
+---
+/**
+ * Mermaid diagrams without a React island. Replaces each Shiki mermaid block
+ * (`MERMAID_BLOCK_SELECTOR`) with the zoom/pan viewer shell, lazy-loads
+ * mermaid only when such blocks exist, renders with the current resolved
+ * theme, and re-renders on theme changes (same-tab toggle, other tabs, OS
+ * scheme). Mount it only when `hasMermaidBlock(html)` is true so pages
+ * without diagrams ship none of this.
+ *
+ * Lifecycle under ClientRouter: init on `astro:page-load`, teardown on
+ * `astro:before-swap` (viewer + theme listeners), so nothing leaks across
+ * soft navigations. Labels arrive via data attributes on a hidden element so
+ * the script stays locale-agnostic.
+ */
+import type { Dictionary } from '@/lib/i18n/dictionaries';
+
+interface Props {
+  labels: Dictionary['mermaid'];
+}
+
+const { labels } = Astro.props;
+---
+<span
+  hidden
+  data-mermaid-labels
+  data-zoom-out={labels.zoomOut}
+  data-reset={labels.reset}
+  data-zoom-in={labels.zoomIn}
+  data-fit={labels.fit}
+  data-fullscreen={labels.fullscreen}
+></span>
+
+<script>
+  import { MERMAID_BLOCK_SELECTOR, mermaidConfig, mermaidThemeFor, type MermaidTheme } from '@/lib/mermaid';
+  import { attachViewer, buildShell, type MermaidViewerLabels } from '@/lib/mermaid-viewer-dom';
+  import {
+    getStoredTheme,
+    resolveTheme,
+    THEME_CHANGE_EVENT,
+    THEME_STORAGE_KEY,
+    type ResolvedTheme,
+    type ThemePreference,
+  } from '@/lib/theme-dom';
+
+  interface Diagram {
+    wrapper: HTMLDivElement;
+    viewport: HTMLDivElement;
+    /** Original mermaid source, kept so theme flips can re-render. */
+    source: string;
+    fit: () => void;
+    cleanup: () => void;
+  }
+
+  let diagrams: Diagram[] = [];
+  // Bumped to abort an in-flight render (theme flip mid-render, teardown).
+  let renderSeq = 0;
+  let renderedTheme: MermaidTheme | null = null;
+  let unsubscribeTheme: (() => void) | null = null;
+
+  function readLabels(): MermaidViewerLabels | null {
+    const el = document.querySelector<HTMLElement>('[data-mermaid-labels]');
+    if (!el) return null;
+    return {
+      zoomOut: el.dataset.zoomOut ?? 'Zoom out',
+      reset: el.dataset.reset ?? 'Reset',
+      zoomIn: el.dataset.zoomIn ?? 'Zoom in',
+      fit: el.dataset.fit ?? 'Fit to screen',
+      fullscreen: el.dataset.fullscreen ?? 'Fullscreen',
+    };
+  }
+
+  // The init snippet / theme-dom keep the <html> class correct pre-paint, so
+  // it is the source of truth for the first render.
+  function documentTheme(): ResolvedTheme {
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  }
+
+  function isPreference(value: unknown): value is ThemePreference {
+    return value === 'light' || value === 'dark' || value === 'system';
+  }
+
+  async function render(resolved: ResolvedTheme) {
+    const theme = mermaidThemeFor(resolved);
+    const targets = diagrams;
+    if (targets.length === 0 || renderedTheme === theme) return;
+
+    const seq = ++renderSeq;
+    renderedTheme = theme;
+    const stale = () => seq !== renderSeq;
+
+    try {
+      // mermaid is a ~1 MB bundle: keep it code-split, loaded only here.
+      const mermaid = (await import('mermaid')).default;
+      // Label dimensions must be measured with the final font, before
+      // Mermaid fixes the SVG foreignObject sizes.
+      await document.fonts.ready;
+      if (stale()) return;
+
+      mermaid.initialize(mermaidConfig(theme, getComputedStyle(targets[0].wrapper).fontFamily));
+
+      for (const { viewport, wrapper, source, fit } of targets) {
+        if (stale()) return;
+        const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+        try {
+          const { svg } = await mermaid.render(id, source);
+          if (stale()) return;
+          viewport.innerHTML = svg;
+          wrapper.classList.add('mermaid-rendered');
+          // Auto-fit: long node/subgraph titles make diagrams wider than the
+          // canvas, and the SVG's width-fit then crops the overflow
+          // (overflow: hidden). Fit the whole diagram instead of cropping.
+          fit();
+        } catch {
+          if (stale()) return;
+          viewport.textContent = source;
+        }
+      }
+    } catch {
+      // Module load failure: allow a later theme flip to retry.
+      if (!stale()) renderedTheme = null;
+    }
+  }
+
+  // Same sync sources as the former `useTheme` hook. The custom event's
+  // detail wins over a storage re-read (storage writes can fail in private
+  // mode after the preference was already applied).
+  function subscribeTheme(): () => void {
+    const onThemeChange = (event: Event) => {
+      const preference =
+        event instanceof CustomEvent && isPreference(event.detail) ? event.detail : getStoredTheme();
+      void render(resolveTheme(preference));
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === THEME_STORAGE_KEY) onThemeChange(event);
+    };
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    window.addEventListener(THEME_CHANGE_EVENT, onThemeChange);
+    window.addEventListener('storage', onStorage);
+    media.addEventListener('change', onThemeChange);
+    return () => {
+      window.removeEventListener(THEME_CHANGE_EVENT, onThemeChange);
+      window.removeEventListener('storage', onStorage);
+      media.removeEventListener('change', onThemeChange);
+    };
+  }
+
+  function teardown() {
+    diagrams.forEach((d) => d.cleanup());
+    diagrams = [];
+    renderSeq += 1; // abort any in-flight render
+    renderedTheme = null;
+    unsubscribeTheme?.();
+    unsubscribeTheme = null;
+  }
+
+  function init() {
+    // Idempotent: a repeat run on the same document finds no blocks (they
+    // were replaced by shells) and leaves the live diagrams alone. Diagrams
+    // from a previous document without a before-swap are dropped first.
+    if (diagrams.length > 0 && !diagrams.every((d) => d.wrapper.isConnected)) teardown();
+
+    const blocks = document.querySelectorAll<HTMLElement>(MERMAID_BLOCK_SELECTOR);
+    if (blocks.length === 0) return;
+    const labels = readLabels();
+    if (!labels) return;
+
+    const added: Diagram[] = [];
+    blocks.forEach((block) => {
+      const source = block.querySelector('code')?.textContent?.trim() ?? '';
+      if (!source) return;
+      const shell = buildShell(labels);
+      block.replaceWith(shell.wrapper);
+      const viewer = attachViewer(shell);
+      added.push({ wrapper: shell.wrapper, viewport: shell.viewport, source, ...viewer });
+    });
+    if (added.length === 0) return;
+
+    diagrams = diagrams.concat(added);
+    unsubscribeTheme ??= subscribeTheme();
+    // New shells need a render even if the theme is unchanged.
+    renderedTheme = null;
+    void render(documentTheme());
+  }
+
+  // Register once per window: a bundled module runs once, but guard anyway
+  // so a re-executed copy can never stack duplicate lifecycle listeners.
+  const registry = window as Window & { __mermaidDiagrams?: true };
+  if (!registry.__mermaidDiagrams) {
+    registry.__mermaidDiagrams = true;
+    document.addEventListener('astro:page-load', init);
+    document.addEventListener('astro:before-swap', teardown);
+  }
+</script>

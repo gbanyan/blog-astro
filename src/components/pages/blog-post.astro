@@ -13,7 +13,7 @@ import { siteLogoUrl } from '@/lib/seo';
 import PostStorylineNav from '../post-storyline-nav.astro';
 import PostCard from '../post-card.astro';
 import ContentImage from '../content-image.astro';
-import { MermaidRenderer } from '../mermaid-renderer';
+import MermaidDiagrams from '../mermaid-diagrams.astro';
 import { GiscusComments } from '../giscus-comments';
 import { FooterCue } from '../footer-cue';
 import { ReadingProgress } from '../reading-progress';
@@ -185,7 +185,7 @@ const breadcrumbSchema = {
           <div>
             <Content />
           </div>
-          {hasMermaid && <MermaidRenderer client:idle labels={dictionary.mermaid} />}
+          {hasMermaid && <MermaidDiagrams labels={dictionary.mermaid} />}
           <CodeCopy labels={dictionary.common} />
         </article>
       </SectionDividerStatic>

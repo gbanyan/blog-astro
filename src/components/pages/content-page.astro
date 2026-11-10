@@ -7,7 +7,8 @@ import { getDocumentLocale, absoluteUrl, documentPath, localizedPath } from '@/l
 import { siteConfig } from '@/lib/config';
 import { getTagSlug } from '@/lib/tags';
 import { socialImageUrl, documentOgUrl } from '@/lib/og';
-import { MermaidRenderer } from '../mermaid-renderer';
+import MermaidDiagrams from '../mermaid-diagrams.astro';
+import { hasMermaidBlock } from '@/lib/mermaid';
 import { ReadingProgress } from '../reading-progress';
 import ScrollReveal from '@/components/scroll-reveal.astro';
 import { DevEnvDeviceHero } from '../dev-env-device-hero';
@@ -27,9 +28,9 @@ interface Props {
 
 const { page, locale, dictionary, hasToc, Content } = Astro.props;
 
-// Only ship the (heavy) Mermaid island when the page has a diagram — same
+// Only ship the Mermaid script when the page has a diagram — same
 // detection as the blog post route.
-const hasMermaid = /data-language="mermaid"|language-mermaid/.test(page.body?.html ?? '');
+const hasMermaid = hasMermaidBlock(page.body?.html ?? '');
 
 // Declarative layout/hero metadata — no slug string-matching.
 const isDevice = page.layout === 'device';
@@ -120,7 +121,7 @@ const slug = page.slug || page.flattenedPath;
           <div>
             <Content />
           </div>
-          {hasMermaid && <MermaidRenderer client:idle labels={dictionary.mermaid} />}
+          {hasMermaid && <MermaidDiagrams labels={dictionary.mermaid} />}
           <CodeCopy labels={dictionary.common} />
         </article>
       </SectionDividerStatic>
