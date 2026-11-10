@@ -136,10 +136,10 @@ html[data-astro-transition='back']::view-transition-new(root) {
 /* Full-bleed media (post covers, device heroes): below sm a plain 1rem
    edge-to-edge bleed; from sm up it bleeds past the content column by up to
    --media-bleed but keeps an inset from the viewport edge on each side, so it
-   is never cropped. The clamp assumes a centred column (`100%` = column
-   width, `100vw` = viewport incl. a classic scrollbar, hence the 1.5rem
-   insets); from lg the post grid's 2rem gap shifts the column 1rem left, so
-   the start side gets 1rem more inset. */
+   is never cropped. The clamp derives the space beside the column from
+   `100%` (column width) and `100vw` (viewport incl. a classic scrollbar,
+   absorbed by the 1.5rem insets); from lg the post grid's 2rem gap shifts
+   the column 1rem left, which the extra 1rem start inset corrects for. */
 .media-bleed {
   margin-inline: -1rem;
 }
