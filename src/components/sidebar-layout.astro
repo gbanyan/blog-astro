@@ -15,11 +15,11 @@ const readingLayout = variant === 'reading';
 const sidebarLocale = locale === 'en' ? 'en' : 'zh-TW';
 
 /**
- * Static host for the source's `SidebarLayout`. The desktop sidebar is plain
- * server-rendered markup (only the Mastodon feed inside it is an island, so
- * React is not needed on mobile where the sidebar is hidden). The mobile
- * drawer is a React island that receives the same server-rendered sidebar
- * content as its slot (rendered into the drawer only while it is open).
+ * Static host for the source's `SidebarLayout`. The sidebar is rendered once,
+ * as plain server markup in the desktop aside (only the Mastodon feed inside
+ * it is an island). Below `lg` that aside is hidden; the mobile drawer island
+ * borrows the same `[data-sidebar-content]` node while it is open instead of
+ * shipping a second copy of the markup.
  */
 ---
 <div
@@ -36,23 +36,17 @@ const sidebarLocale = locale === 'en' ? 'en' : 'zh-TW';
   <div class="hidden lg:block">
     <aside class="hidden lg:block">
       <div class={readingLayout ? 'sticky top-24' : 'sticky top-20'}>
-        <RightSidebarContent
-          tags={tags}
-          aboutUrl={aboutUrl}
-          avatarSrc={avatarSrc}
-          locale={sidebarLocale}
-          variant={variant}
-        />
+        <div data-sidebar-content>
+          <RightSidebarContent
+            tags={tags}
+            aboutUrl={aboutUrl}
+            avatarSrc={avatarSrc}
+            locale={sidebarLocale}
+            variant={variant}
+          />
+        </div>
       </div>
     </aside>
   </div>
 </div>
-<SidebarDrawer client:idle locale={sidebarLocale}>
-  <RightSidebarContent
-    tags={tags}
-    aboutUrl={aboutUrl}
-    avatarSrc={avatarSrc}
-    locale={sidebarLocale}
-    variant={variant}
-  />
-</SidebarDrawer>
+<SidebarDrawer client:idle locale={sidebarLocale} />
