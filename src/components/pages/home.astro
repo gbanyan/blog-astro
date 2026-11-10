@@ -51,15 +51,14 @@ const posts = await getPostListEntries(
           <!-- Before paint: on a return visit this session (or under reduced
                motion) show the server-rendered finished terminal at once. -->
           <script is:inline data-astro-rerun define:vars={{ introKey: INTRO_PLAYED_KEY }}>
+            let played = matchMedia('(prefers-reduced-motion: reduce)').matches;
             try {
-              if (
-                sessionStorage.getItem(introKey) === '1' ||
-                matchMedia('(prefers-reduced-motion: reduce)').matches
-              ) {
-                document.querySelector('[data-home-hero]')?.setAttribute('data-intro-played', '');
-              }
+              played ||= sessionStorage.getItem(introKey) === '1';
             } catch {
-              // Storage blocked: the first-visit intro plays as usual.
+              // Storage blocked: treat as a first visit.
+            }
+            if (played) {
+              document.querySelector('[data-home-hero]')?.setAttribute('data-intro-played', '');
             }
           </script>
           <noscript><style>[data-home-hero] [data-terminal-content] { visibility: visible !important; }</style></noscript>
