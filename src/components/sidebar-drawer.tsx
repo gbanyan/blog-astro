@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef } from 'react';
 /** Matches MobileDrawer's slide-out (`duration-300`). */
 const CLOSE_ANIMATION_MS = 300;
 /** The drawer and its trigger are `lg:hidden`; at this width the desktop aside shows. */
-const DESKTOP_QUERY = '(min-width: 1024px)';
+const DESKTOP_QUERY = '(min-width: 64rem)'; // Tailwind v4 `lg` (rem follows the user's font size)
 
 interface SidebarDrawerProps {
   locale: Locale;
