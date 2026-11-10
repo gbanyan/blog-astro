@@ -1,0 +1,98 @@
+/* Print stylesheet. Partial of globals.css; imported last. */
+
+/* Print: article only, black on white, light code theme. */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html,
+  html.dark {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  /* Site chrome and interactive widgets */
+  .skip-link,
+  body header:not(main header),
+  aside:not(.prose aside),
+  .fixed,
+  .footer-cue,
+  .giscus-comments,
+  .code-block-toolbar,
+  .mermaid-zoom-bar,
+  .scroll-divider-bar,
+  [data-pagefind-ignore] {
+    display: none !important;
+  }
+
+  /* Ink: black text, no tinted surfaces — except syntax-highlighted code,
+     which keeps the light Shiki palette. */
+  body *:not(.astro-code, .astro-code *) {
+    color: #000 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  .astro-code,
+  .dark .astro-code {
+    background-color: var(--shiki-light-bg) !important;
+  }
+  .astro-code,
+  .astro-code span,
+  .dark .astro-code,
+  .dark .astro-code span {
+    color: var(--shiki-light) !important;
+    font-style: var(--shiki-light-font-style) !important;
+    font-weight: var(--shiki-light-font-weight) !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Never print half-revealed content */
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .prose {
+    max-width: none !important;
+    font-size: 11pt;
+  }
+
+  /* Long lines wrap instead of being clipped by overflow-x */
+  .prose pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    border-color: #ccc !important;
+  }
+
+  .prose pre,
+  .prose figure,
+  .prose img,
+  .prose table,
+  .prose blockquote,
+  .prose .callout,
+  .mermaid-diagram {
+    break-inside: avoid;
+  }
+
+  .prose :is(h1, h2, h3, h4) {
+    break-after: avoid;
+  }
+
+  /* Spell out external link targets */
+  .prose a[href^='http']:not(:has(img))::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    font-weight: normal;
+    overflow-wrap: anywhere;
+  }
+}

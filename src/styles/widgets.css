@@ -1,0 +1,305 @@
+/* Components and widgets: cards, home terminal hero, tag chips, TOC,
+   Mastodon skeleton, reading progress, search backdrop, component-layer
+   typography helpers. Partial of globals.css. */
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* `backwards` (not `both`): the end state equals the resting style, and
+   not filling forwards leaves `transform` free for .motion-card's hover. */
+.repo-card-enter {
+  animation: fade-in-up 0.6s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repo-card-enter {
+    animation: none;
+  }
+}
+
+@keyframes mastodon-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.mastodon-skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.mastodon-skeleton-shimmer::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: mastodon-shimmer 2.2s ease-in-out infinite;
+}
+
+.dark .mastodon-skeleton-shimmer {
+  background: #1e293b;
+}
+
+.dark .mastodon-skeleton-shimmer::after {
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgba(167, 139, 250, 0.3) 50%,
+    transparent 65%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mastodon-skeleton-shimmer::after {
+    animation: none;
+    transform: translateX(0);
+    background: none;
+  }
+}
+
+/* Reading progress bar - Scroll-Driven Animations API (Chrome 115+, Safari 26+, Edge 115+) */
+@keyframes reading-progress-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.reading-progress-bar-scroll-driven {
+  animation: reading-progress-grow auto linear forwards;
+  animation-timeline: scroll(block root);
+}
+
+/* Terminal hero — warm editorial shell, preserved technical core */
+.terminal-hero-window {
+  border-color: #c9bca7;
+  border-radius: clamp(0.75rem, 0.55rem + 0.5vw, 1rem);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), transparent 42%),
+    #f3eee5;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(92, 70, 45, 0.08),
+    0 22px 52px -34px rgba(92, 64, 38, 0.58),
+    0 8px 20px -14px rgba(92, 64, 38, 0.34);
+}
+
+.terminal-hero-window > .border-b {
+  padding-inline: clamp(1rem, 0.7rem + 1vw, 1.5rem);
+  padding-block: clamp(0.65rem, 0.55rem + 0.35vw, 0.8rem);
+  border-bottom-color: #d7ccbb;
+  background: rgba(232, 222, 207, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.terminal-hero-window > .border-b > div > span {
+  box-shadow:
+    inset 0 0 0 1px rgba(70, 52, 34, 0.12),
+    0 1px 1px rgba(70, 52, 34, 0.1);
+}
+
+.terminal-hero-window > .border-b > div > span:nth-child(1) {
+  background: #c96f61;
+}
+
+.terminal-hero-window > .border-b > div > span:nth-child(2) {
+  background: #d29b4b;
+}
+
+.terminal-hero-window > .border-b > div > span:nth-child(3) {
+  background: #63966f;
+}
+
+.terminal-hero-window > .flex-1 {
+  padding: clamp(1rem, 0.7rem + 1vw, 1.5rem);
+  line-height: 1.5;
+}
+
+.terminal-hero-window .text-slate-900 {
+  color: #292524;
+}
+
+.terminal-hero-window .text-slate-600 {
+  color: #57534e;
+}
+
+.terminal-hero-window .text-slate-500 {
+  color: #6b625b;
+}
+
+.terminal-hero-window .text-emerald-600,
+.terminal-hero-window .text-emerald-600\/90 {
+  color: #256b4c;
+}
+
+.terminal-hero-window .bg-emerald-600 {
+  background-color: #256b4c;
+}
+
+.terminal-hero-window .border-emerald-600 {
+  border-color: #256b4c;
+}
+
+.dark .terminal-hero-window {
+  border-color: #413b33;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 235, 0.045), transparent 44%),
+    #171512;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 235, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 24px 58px -34px rgba(0, 0, 0, 0.88),
+    0 8px 22px -14px rgba(0, 0, 0, 0.72);
+}
+
+.dark .terminal-hero-window > .border-b {
+  border-bottom-color: #38332c;
+  background: rgba(34, 31, 27, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 248, 235, 0.045);
+}
+
+.dark .terminal-hero-window > .border-b > div > span {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+.dark .terminal-hero-window .text-slate-900 {
+  color: #f2eee7;
+}
+
+.dark .terminal-hero-window .text-slate-600 {
+  color: #d2ccc3;
+}
+
+.dark .terminal-hero-window .text-slate-500 {
+  color: #aaa198;
+}
+
+.dark .terminal-hero-window .text-emerald-600,
+.dark .terminal-hero-window .text-emerald-600\/90 {
+  color: #78d5a4;
+}
+
+.dark .terminal-hero-window .bg-emerald-600 {
+  background-color: #78d5a4;
+}
+
+.dark .terminal-hero-window .border-emerald-600 {
+  border-color: #78d5a4;
+}
+
+.tag-chip {
+  position: relative;
+  overflow: hidden;
+  transition: color var(--duration-180) var(--ease-snappy), background-color var(--duration-180) var(--ease-snappy);
+}
+
+.tag-chip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.5;
+  transition: width var(--duration-180) var(--ease-snappy), left var(--duration-180) var(--ease-snappy);
+}
+
+.tag-chip:hover::after,
+.tag-chip:focus-visible::after {
+  width: 100%;
+  left: 0;
+}
+
+/* TOC transitions - replaces Framer Motion */
+.toc-sidebar {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  will-change: opacity, transform;
+}
+
+@layer components {
+  /* Subtle scrollbars for panels / TOC / search (Tailwind v4.3 utilities) */
+  .scroll-panel {
+    @apply overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300/80 scrollbar-gutter-stable dark:scrollbar-thumb-slate-600/80;
+  }
+
+  .type-display {
+    font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.5rem);
+    line-height: 1.2;
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+    letter-spacing: 0.01em; /* 手写风格字体需要稍微增加字间距 */
+  }
+
+  .type-title {
+    font-size: clamp(1.6rem, 1.1rem + 1.4vw, 2.6rem);
+    line-height: 1.3;
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+    letter-spacing: 0.025em; /* 手写风格字体需要稍微增加字间距 */
+  }
+
+  .type-subtitle {
+    font-size: clamp(1.25rem, 0.9rem + 1vw, 1.9rem);
+    line-height: 1.35;
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+    letter-spacing: 0.02em; /* 保持原有字间距 */
+  }
+
+  .type-body {
+    font-size: clamp(1rem, 0.2vw + 0.9rem, 1.15rem);
+    line-height: var(--line-height-body);
+    font-weight: var(--font-weight-regular);
+  }
+
+  .type-small {
+    font-size: clamp(0.85rem, 0.2vw + 0.8rem, 0.95rem);
+    line-height: 1.4;
+    font-weight: var(--font-weight-regular);
+  }
+
+  /* Cormorant ships only its Latin subset here, so CJK glyphs reliably fall
+     through to LXGW while mixed-language titles keep their intended faces. */
+  .font-editorial {
+    font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+  }
+
+  .type-nav {
+    font-size: clamp(0.95rem, 0.2vw + 0.85rem, 1.05rem);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.04em;
+  }
+
+  .motion-card {
+    transition: transform var(--duration-260) var(--ease-snappy),
+      box-shadow var(--duration-260) var(--ease-snappy),
+      background-color var(--duration-260) var(--ease-snappy),
+      border-color var(--duration-260) var(--ease-snappy);
+  }
+
+  .motion-card:hover {
+    transform: translateY(var(--card-translate-y));
+  }
+
+  .motion-link {
+    transition: color var(--duration-180) var(--ease-snappy),
+      transform var(--duration-180) var(--ease-snappy);
+  }
+}
+
+/* Search modal backdrop. cmdk's Command.Dialog renders a Radix Dialog
+   Overlay tagged `cmdk-overlay` (Radix itself adds no attribute to match).
+   It sits just below the dialog panel (z-[9999] in search-modal.tsx); a
+   click on it is a pointer-down outside the content, which closes. */
+[cmdk-overlay] {
+  @apply fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm dark:bg-black/60;
+}

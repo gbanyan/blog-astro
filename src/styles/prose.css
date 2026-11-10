@@ -1,0 +1,447 @@
+/* Article typography: prose overrides, blockquotes, code blocks (Shiki),
+   callouts and the Mermaid viewer. Partial of globals.css. */
+
+.toc-target-highlight {
+  @apply bg-yellow-50/60 dark:bg-yellow-900/40 transition-colors duration-500;
+}
+
+/* Subtle hover for article elements */
+.prose blockquote {
+  @apply transition-transform transition-shadow duration-180 ease-snappy;
+  border-left: 4px solid var(--color-accent);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(124, 58, 237, 0.1));
+  padding: 1.2rem 1.5rem;
+  font-style: italic;
+  color: rgba(15, 23, 42, 0.78);
+  position: relative;
+}
+
+.dark .prose blockquote {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(124, 58, 237, 0.08));
+  color: rgba(226, 232, 240, 0.85);
+  border-left-color: rgba(167, 139, 250, 0.9);
+}
+
+.prose blockquote:hover {
+  @apply -translate-y-0.5 shadow-sm;
+}
+
+.prose blockquote::before {
+  content: '\201C';
+  position: absolute;
+  top: 0.5rem;
+  left: 0.8rem;
+  font-size: 3rem;
+  font-family: 'Times New Roman', 'Noto Serif TC', serif;
+  color: rgba(37, 99, 235, 0.25);
+  pointer-events: none;
+}
+
+/* Typography plugin prose overrides */
+.prose {
+  font-size: clamp(1rem, 0.2vw + 0.9rem, 1.2rem);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-body);
+}
+
+.prose a {
+  color: var(--color-accent-text-light);
+}
+
+.prose a:hover {
+  color: var(--color-accent);
+}
+
+.dark .prose a {
+  color: var(--color-accent-text-dark);
+}
+
+.dark .prose a:hover {
+  color: var(--color-accent);
+}
+
+.prose h1 {
+  font-size: clamp(2.2rem, 1.4rem + 2.2vw, 3.4rem);
+  line-height: 1.25;
+  color: var(--color-ink-strong);
+  font-weight: 700;
+  letter-spacing: 0.01em; /* 手写风格字体需要稍微增加字间距 */
+  font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+}
+
+.prose h2 {
+  font-size: clamp(1.8rem, 1.1rem + 1.6vw, 2.8rem);
+  line-height: 1.3;
+  color: var(--color-ink-strong);
+  font-weight: 600;
+  letter-spacing: 0.015em; /* 手写风格字体需要稍微增加字间距 */
+  font-family: var(--font-display-latin), var(--font-display-cjk), "Songti SC", serif;
+}
+
+.prose h3 {
+  font-size: clamp(1.4rem, 0.9rem + 1vw, 2rem);
+  line-height: 1.35;
+  color: var(--color-ink-strong);
+}
+
+.prose p,
+.prose li {
+  font-size: clamp(1rem, 0.2vw + 0.9rem, 1.15rem);
+  line-height: var(--line-height-body);
+  color: var(--color-ink-body);
+}
+
+.prose small,
+.prose figcaption {
+  font-size: clamp(0.85rem, 0.2vw + 0.8rem, 0.95rem);
+}
+
+/* Dark mode prose overrides (replaces prose-dark) */
+.dark .prose strong,
+.dark .prose b {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.dark .prose em {
+  color: #f1f5f9;
+}
+
+.dark .prose h1,
+.dark .prose h2 {
+  color: #f8fafc;
+}
+
+.prose h1>a,
+.prose h2>a,
+.prose h3>a,
+.prose h4>a,
+.prose h5>a,
+.prose h6>a {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Code blocks (Shiki dual theme). The block background comes from Shiki's
+   own github-light / github-dark `-bg` vars on the <pre>, so the token
+   colors always sit on the background they were designed for; only the
+   frame (border, radius, padding) is ours. */
+.prose pre {
+  @apply overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700;
+  @apply transition-transform transition-shadow duration-180 ease-snappy;
+  padding: 1rem 1.2rem;
+  margin: 1.5rem 0;
+}
+
+.prose pre:hover {
+  @apply -translate-y-0.5 shadow-md;
+}
+
+.prose pre > code {
+  @apply grid;
+  font-size: 0.9em;
+  line-height: 1.7;
+}
+
+/* Inline code */
+.prose :not(pre) > code {
+  @apply rounded bg-slate-800 px-1.5 py-0.5 text-sm font-semibold text-slate-100 dark:bg-slate-700 dark:text-slate-100;
+  overflow-wrap: anywhere;
+}
+
+/* Shiki dual-theme tokens. astro.config.mjs sets `defaultColor: false`, so
+   Shiki emits --shiki-light/--shiki-dark (plus -bg/-font-style/-font-weight)
+   as inline vars: the -bg pair on the <pre>, the color pair per token span.
+   Only the <pre> paints the background — token spans stay transparent so a
+   block renders as one surface instead of per-token stripes. */
+.astro-code { background-color: var(--shiki-light-bg); }
+.dark .astro-code { background-color: var(--shiki-dark-bg); }
+.astro-code, .astro-code span { color: var(--shiki-light); font-style: var(--shiki-light-font-style); font-weight: var(--shiki-light-font-weight); }
+.dark .astro-code, .dark .astro-code span { color: var(--shiki-dark); font-style: var(--shiki-dark-font-style); font-weight: var(--shiki-dark-font-weight); }
+
+/* Code block chrome added by code-copy.astro: the <pre> is wrapped in a
+   positioned container so the language label and copy button can sit in
+   the block's top-right corner without scrolling away with wide code. */
+.prose .code-block {
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+.prose .code-block > pre {
+  margin: 0;
+  padding-top: 2.5rem;
+}
+
+.code-block-toolbar {
+  @apply absolute right-2 top-2 flex items-center gap-2;
+}
+
+.code-block-lang {
+  @apply select-none font-mono text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400;
+}
+
+.code-block-copy {
+  @apply inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-300/80 bg-white/80 px-2 font-sans text-xs text-slate-600 transition-colors duration-150 hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-white;
+}
+
+.code-block-copy[data-state='copied'] {
+  @apply border-accent text-accent-textLight dark:text-accent-textDark;
+}
+
+/* GitHub-style Callouts/Alerts */
+.prose .callout {
+  @apply my-6 rounded-lg border-l-4 p-4 shadow-sm;
+  background: linear-gradient(135deg, var(--callout-bg-start), var(--callout-bg-end));
+}
+
+.prose .callout-header {
+  @apply mb-3 flex items-center gap-2;
+}
+
+.prose .callout-icon {
+  @apply text-2xl;
+  line-height: 1;
+}
+
+.prose .callout-title {
+  @apply text-sm font-bold uppercase tracking-wider;
+  color: var(--callout-title-color);
+  letter-spacing: 0.05em;
+}
+
+.prose .callout-content {
+  @apply text-sm leading-relaxed;
+}
+
+.prose .callout-content > *:first-child {
+  @apply mt-0;
+}
+
+.prose .callout-content > *:last-child {
+  @apply mb-0;
+}
+
+/* NOTE - Blue */
+.prose .callout-note {
+  --callout-bg-start: rgba(59, 130, 246, 0.08);
+  --callout-bg-end: rgba(59, 130, 246, 0.04);
+  --callout-title-color: #2563eb;
+  @apply border-blue-500;
+}
+
+.dark .prose .callout-note {
+  --callout-bg-start: rgba(96, 165, 250, 0.12);
+  --callout-bg-end: rgba(96, 165, 250, 0.06);
+  --callout-title-color: #93c5fd;
+  @apply border-blue-400;
+}
+
+/* TIP - Green */
+.prose .callout-tip {
+  --callout-bg-start: rgba(34, 197, 94, 0.08);
+  --callout-bg-end: rgba(34, 197, 94, 0.04);
+  --callout-title-color: #16a34a;
+  @apply border-green-500;
+}
+
+.dark .prose .callout-tip {
+  --callout-bg-start: rgba(74, 222, 128, 0.12);
+  --callout-bg-end: rgba(74, 222, 128, 0.06);
+  --callout-title-color: #86efac;
+  @apply border-green-400;
+}
+
+/* IMPORTANT - Purple */
+.prose .callout-important {
+  --callout-bg-start: rgba(168, 85, 247, 0.08);
+  --callout-bg-end: rgba(168, 85, 247, 0.04);
+  --callout-title-color: #9333ea;
+  @apply border-purple-500;
+}
+
+.dark .prose .callout-important {
+  --callout-bg-start: rgba(192, 132, 252, 0.12);
+  --callout-bg-end: rgba(192, 132, 252, 0.06);
+  --callout-title-color: #c084fc;
+  @apply border-purple-400;
+}
+
+/* WARNING - Orange/Yellow */
+.prose .callout-warning {
+  --callout-bg-start: rgba(251, 191, 36, 0.08);
+  --callout-bg-end: rgba(251, 191, 36, 0.04);
+  --callout-title-color: #d97706;
+  @apply border-yellow-500;
+}
+
+.dark .prose .callout-warning {
+  --callout-bg-start: rgba(253, 224, 71, 0.12);
+  --callout-bg-end: rgba(253, 224, 71, 0.06);
+  --callout-title-color: #fde047;
+  @apply border-yellow-400;
+}
+
+/* CAUTION - Red */
+.prose .callout-caution {
+  --callout-bg-start: rgba(239, 68, 68, 0.08);
+  --callout-bg-end: rgba(239, 68, 68, 0.04);
+  --callout-title-color: #dc2626;
+  @apply border-red-500;
+}
+
+.dark .prose .callout-caution {
+  --callout-bg-start: rgba(248, 113, 113, 0.12);
+  --callout-bg-end: rgba(248, 113, 113, 0.06);
+  --callout-title-color: #fca5a5;
+  @apply border-red-400;
+}
+
+/* Mermaid diagram viewer */
+/* Mermaid measures HTML labels outside the article. Keep our custom prose
+   rules from enlarging them after insertion into fixed-size foreignObjects.
+   not-prose on the viewer also excludes Tailwind Typography's element rules. */
+.prose .mermaid-diagram p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.mermaid-diagram {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fafbfc;
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+}
+
+.dark .mermaid-diagram {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+.mermaid-diagram.mermaid-rendered {
+  opacity: 1;
+}
+
+/* Fullscreen overrides */
+.mermaid-diagram:fullscreen {
+  border-radius: 0;
+  border: none;
+}
+
+.mermaid-diagram:fullscreen .mermaid-canvas {
+  height: calc(100vh - 40px);
+}
+
+/* Canvas — the pannable/zoomable area */
+.mermaid-canvas {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 360px;
+  cursor: grab;
+  touch-action: none;
+}
+
+@media (min-width: 768px) {
+  .mermaid-canvas {
+    height: 420px;
+  }
+}
+
+.mermaid-grabbing .mermaid-canvas {
+  cursor: grabbing;
+}
+
+.mermaid-viewport {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 100%;
+  min-height: 100%;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* Toolbar */
+.mermaid-zoom-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-top: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dark .mermaid-zoom-bar {
+  border-top-color: #334155;
+  background: #1e293b;
+}
+
+.mermaid-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.mermaid-zoom-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.mermaid-zoom-btn:active {
+  background: #cbd5e1;
+}
+
+.dark .mermaid-zoom-btn {
+  color: #94a3b8;
+}
+
+.dark .mermaid-zoom-btn:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.dark .mermaid-zoom-btn:active {
+  background: #475569;
+}
+
+.mermaid-zoom-level {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+}
+
+.mermaid-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: #cbd5e1;
+}
+
+.dark .mermaid-sep {
+  background: #475569;
+}

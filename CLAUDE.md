@@ -58,7 +58,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Tailwind CSS v4 with CSS-first configuration (no `tailwind.config.cjs`; wired via `@tailwindcss/vite`)
 - Dark mode via `@custom-variant dark` in `src/styles/globals.css` (class-based, toggled by the inline theme script in `layout.astro`)
-- Theme customization via the `@theme` block in `src/styles/globals.css`: colors, fonts, easing, durations, shadows, keyframes, animations
+- Theme customization via the `@theme` blocks in `src/styles/globals.css`: accent colors (`@theme inline reference` over the runtime vars), easing and duration tokens (`ease-snappy`, `duration-180/260`, also used as `var()` in custom CSS)
+- `globals.css` is the Tailwind entry (`@import "tailwindcss"`, `@plugin`, `@custom-variant`, `@source`, `@theme`) and `@import`s its partials in cascade order: `base.css` → `prose.css` → `widgets.css` → `print.css` (Tailwind inlines them, so `@apply`/`dark:` work there). `device-heroes.css` is NOT in the global sheet — the dev-env/homelab hero components import it, so it ships only with content pages
 - Accent color system via CSS variables set in `src/layouts/layout.astro` from `PUBLIC_COLOR_*` env vars: `--color-accent`, `--color-accent-soft`, `--color-accent-text-light`, `--color-accent-text-dark`
 - Typography plugin (`@tailwindcss/typography`) loaded via `@plugin` directive; prose dark mode handled by custom `.dark .prose` CSS overrides
 - Fonts: Cormorant Garamond (`--font-display-latin`) via the Astro Fonts API (`astro.config.mjs`); LXGW WenKai TC (`--font-display-cjk`) is a build-time subset (`scripts/build-display-font.mjs` → `public/fonts/`, declared by `src/lib/display-font.ts` in `layout.astro`, preloaded on zh pages, immutable-cached). New heading glyphs are picked up automatically on the next build; glyphs outside the subset fall back to the next font in the stack. English headings use the serif display font, body uses the CJK-aware stack
